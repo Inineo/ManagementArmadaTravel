@@ -1,0 +1,6 @@
+{
+  "name": "Manajemen Armada & Order",
+  "description": "Sistem manajemen operasional armada transportasi, penjadwalan order driver, status perjalanan real-time, dan laporan statistik.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
