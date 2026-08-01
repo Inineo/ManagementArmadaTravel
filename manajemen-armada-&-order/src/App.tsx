@@ -230,37 +230,37 @@ export default function App() {
 
   // Load from LocalStorage or fallback to mock data
   const [armadaList, setArmadaList] = useState<Armada[]>(() => {
-    const saved = typeof window !== 'undefined' ? localStorage.getItem('fleet_armada') : null;
+    const saved = localStorage.getItem('fleet_armada');
     return saved ? JSON.parse(saved) : INITIAL_ARMADA;
   });
 
   const [driversList, setDriversList] = useState<Driver[]>(() => {
-    const saved = typeof window !== 'undefined' ? localStorage.getItem('fleet_drivers') : null;
+    const saved = localStorage.getItem('fleet_drivers');
     return saved ? JSON.parse(saved) : INITIAL_DRIVERS;
   });
 
   const [ordersList, setOrdersList] = useState<Order[]>(() => {
-    const saved = typeof window !== 'undefined' ? localStorage.getItem('fleet_orders') : null;
+    const saved = localStorage.getItem('fleet_orders');
     return saved ? JSON.parse(saved) : INITIAL_ORDERS;
   });
 
   const [historyList, setHistoryList] = useState<TripHistory[]>(() => {
-    const saved = typeof window !== 'undefined' ? localStorage.getItem('fleet_history') : null;
+    const saved = localStorage.getItem('fleet_history');
     return saved ? JSON.parse(saved) : INITIAL_HISTORY;
   });
 
   const [maintenanceList, setMaintenanceList] = useState<MaintenanceRecord[]>(() => {
-    const saved = typeof window !== 'undefined' ? localStorage.getItem('fleet_maintenance') : null;
+    const saved = localStorage.getItem('fleet_maintenance');
     return saved ? JSON.parse(saved) : INITIAL_MAINTENANCE;
   });
 
   const [ajkList, setAjkList] = useState<AjkSchedule[]>(() => {
-    const saved = typeof window !== 'undefined' ? localStorage.getItem('fleet_ajk') : null;
+    const saved = localStorage.getItem('fleet_ajk');
     return saved ? JSON.parse(saved) : INITIAL_AJK;
   });
 
   const [ajkInvoiceList, setAjkInvoiceList] = useState<AjkInvoice[]>(() => {
-    const saved = typeof window !== 'undefined' ? localStorage.getItem('fleet_ajk_invoices') : null;
+    const saved = localStorage.getItem('fleet_ajk_invoices');
     return saved ? JSON.parse(saved) : INITIAL_AJK_INVOICES;
   });
 
