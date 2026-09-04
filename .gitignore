@@ -11,3 +11,10 @@ coverage/
 .next/
 out/
 *.tsbuildinfo
+
+# Foto laporan driver (temporary, tidak perlu masuk git)
+laporan-uploads/*.jpg
+laporan-uploads/*.jpeg
+laporan-uploads/*.png
+laporan-uploads/*.webp
+laporan-uploads/metadata.json

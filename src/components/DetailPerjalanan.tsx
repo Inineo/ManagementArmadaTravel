@@ -3,9 +3,9 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Order } from '../types';
-import { ArrowLeft, MapPin, Clock, Calendar, ShieldCheck, CheckCircle, XCircle } from 'lucide-react';
+import { ArrowLeft, Clock, ShieldCheck, CheckCircle, XCircle, ImageIcon, ChevronLeft, ChevronRight, Loader2 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 
 interface DetailPerjalananProps {
@@ -29,8 +29,23 @@ export default function DetailPerjalanan({
   onCompleteOrder,
   onCancelOrder,
 }: DetailPerjalananProps) {
-  // State to track if we are viewing the report image details (Screenshot 1)
   const [selectedLog, setSelectedLog] = useState<LogAktivitas | null>(null);
+  // Foto real dari API
+  const [photos, setPhotos] = useState<{ id: string; url: string; uploadedAt: string }[]>([]);
+  const [photosLoading, setPhotosLoading] = useState(false);
+  const [currentPhotoIndex, setCurrentPhotoIndex] = useState(0);
+
+  // Fetch foto dari API saat view gambar laporan dibuka
+  useEffect(() => {
+    if (!selectedLog) return;
+    setPhotosLoading(true);
+    setCurrentPhotoIndex(0);
+    fetch(`/api/laporan-foto?tripId=${encodeURIComponent(order.id)}`)
+      .then(res => res.json())
+      .then(data => setPhotos(data.photos || []))
+      .catch(() => setPhotos([]))
+      .finally(() => setPhotosLoading(false));
+  }, [selectedLog, order.id]);
 
   // Parse time to AM/PM for standard display
   const formatTimeAMPM = (timeStr: string) => {
@@ -90,10 +105,13 @@ export default function DetailPerjalanan({
 
   // Render Screenshot 1: "Gambar Laporan" view
   if (selectedLog) {
+    const hasRealPhotos = photos.length > 0;
+    const currentPhoto = hasRealPhotos ? photos[currentPhotoIndex] : null;
+
     return (
       <div id="image-report-container" className="flex flex-col h-full bg-[#F0F2F5]">
         {/* Header navigation */}
-        <div className="flex items-center mb-6">
+        <div className="flex items-center justify-between mb-6">
           <button
             onClick={() => setSelectedLog(null)}
             className="flex items-center gap-2 text-[#2F2FE4] hover:text-[#2020D0] font-bold text-xl transition-colors focus:outline-none"
@@ -101,25 +119,99 @@ export default function DetailPerjalanan({
             <ArrowLeft size={24} className="stroke-[3px]" />
             <span>Detail Perjalanan</span>
           </button>
+          {hasRealPhotos && (
+            <span className="text-xs font-bold text-gray-500 bg-white px-3 py-1.5 rounded-full border border-gray-200">
+              {currentPhotoIndex + 1} / {photos.length} Foto
+            </span>
+          )}
         </div>
 
         {/* Image Content Canvas */}
         <div className="flex-1 relative bg-black rounded-2xl overflow-hidden shadow-lg border border-gray-200">
-          <img
-            src="/bus_report_detail.jpg"
-            alt="Foto Laporan Perjalanan"
-            className="w-full h-full object-cover"
-          />
-          {/* Text overlay exactly matching Screenshot 1 */}
-          <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/90 via-black/60 to-transparent p-6 md:p-8 flex flex-col justify-end text-white">
-            <h2 className="text-lg md:text-2xl font-bold leading-snug tracking-wide text-white drop-shadow-md">
-              {selectedLog.lokasi}
-            </h2>
-            <p className="text-sm md:text-lg text-white/95 mt-2 font-medium drop-shadow-sm flex items-center gap-2">
-              <Clock size={16} />
-              <span>{selectedLog.waktu}, {selectedLog.tanggal}</span>
-            </p>
-          </div>
+          {photosLoading ? (
+            <div className="w-full h-full flex items-center justify-center bg-gray-900">
+              <div className="text-center text-white">
+                <Loader2 size={32} className="animate-spin mx-auto mb-2" />
+                <p className="text-sm font-bold">Memuat foto laporan...</p>
+              </div>
+            </div>
+          ) : hasRealPhotos && currentPhoto ? (
+            <>
+              <img
+                src={currentPhoto.url}
+                alt={`Foto Laporan ${currentPhotoIndex + 1}`}
+                className="w-full h-full object-cover"
+              />
+              {/* Navigasi foto */}
+              {photos.length > 1 && (
+                <>
+                  <button
+                    onClick={() => setCurrentPhotoIndex(i => Math.max(0, i - 1))}
+                    disabled={currentPhotoIndex === 0}
+                    className="absolute left-3 top-1/2 -translate-y-1/2 p-2 bg-black/50 hover:bg-black/70 text-white rounded-full disabled:opacity-30 transition-all cursor-pointer"
+                  >
+                    <ChevronLeft size={20} />
+                  </button>
+                  <button
+                    onClick={() => setCurrentPhotoIndex(i => Math.min(photos.length - 1, i + 1))}
+                    disabled={currentPhotoIndex === photos.length - 1}
+                    className="absolute right-3 top-1/2 -translate-y-1/2 p-2 bg-black/50 hover:bg-black/70 text-white rounded-full disabled:opacity-30 transition-all cursor-pointer"
+                  >
+                    <ChevronRight size={20} />
+                  </button>
+                  {/* Dot indicators */}
+                  <div className="absolute top-3 left-1/2 -translate-x-1/2 flex gap-1.5">
+                    {photos.map((_, i) => (
+                      <button
+                        key={i}
+                        onClick={() => setCurrentPhotoIndex(i)}
+                        className={`w-2 h-2 rounded-full transition-all cursor-pointer ${
+                          i === currentPhotoIndex ? 'bg-white scale-125' : 'bg-white/50'
+                        }`}
+                      />
+                    ))}
+                  </div>
+                </>
+              )}
+              {/* Overlay info */}
+              <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/90 via-black/60 to-transparent p-6 flex flex-col justify-end text-white">
+                <h2 className="text-lg md:text-xl font-bold leading-snug tracking-wide drop-shadow-md">
+                  {selectedLog.lokasi}
+                </h2>
+                <p className="text-sm text-white/90 mt-1.5 font-medium flex items-center gap-2">
+                  <Clock size={14} />
+                  <span>{selectedLog.waktu}, {selectedLog.tanggal}</span>
+                </p>
+                <p className="text-[10px] text-white/60 font-bold mt-1">
+                  Diupload: {new Date(currentPhoto.uploadedAt).toLocaleString('id-ID')}
+                </p>
+              </div>
+            </>
+          ) : (
+            /* Placeholder jika belum ada foto dari driver */
+            <>
+              <img
+                src="/bus_report_detail.jpg"
+                alt="Foto Laporan Perjalanan (Demo)"
+                className="w-full h-full object-cover opacity-60"
+              />
+              <div className="absolute inset-0 flex flex-col items-center justify-center bg-black/50">
+                <ImageIcon size={40} className="text-white/60 mb-3" />
+                <p className="text-white font-black text-sm">Belum Ada Foto Laporan</p>
+                <p className="text-white/70 text-xs font-semibold mt-1 text-center px-8">
+                  Driver belum mengupload foto untuk trip ini.<br />
+                  Foto dapat diupload di halaman <strong>/driver/laporan</strong>
+                </p>
+              </div>
+              <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/90 via-black/60 to-transparent p-6 flex flex-col justify-end text-white">
+                <h2 className="text-lg font-bold leading-snug drop-shadow-md">{selectedLog.lokasi}</h2>
+                <p className="text-sm text-white/95 mt-1.5 font-medium flex items-center gap-2">
+                  <Clock size={14} />
+                  <span>{selectedLog.waktu}, {selectedLog.tanggal}</span>
+                </p>
+              </div>
+            </>
+          )}
         </div>
       </div>
     );
