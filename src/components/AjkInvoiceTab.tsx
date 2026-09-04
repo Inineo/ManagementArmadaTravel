@@ -623,13 +623,18 @@ export default function AjkInvoiceTab({
                   <label className="block text-gray-500 uppercase tracking-wide mb-1">
                     Tanggal Jatuh Tempo
                   </label>
-                  <input
-                    type="date"
-                    required
-                    value={invDueDate}
-                    onChange={(e) => setInvDueDate(e.target.value)}
-                    className="w-full border border-gray-200 rounded-lg p-2.5 bg-gray-50 text-xs font-bold cursor-pointer"
-                  />
+                  <div className="relative">
+                    <span className="absolute inset-y-0 left-0 flex items-center pl-2.5 pointer-events-none text-gray-400">
+                      <Calendar size={13} />
+                    </span>
+                    <input
+                      type="date"
+                      required
+                      value={invDueDate}
+                      onChange={(e) => setInvDueDate(e.target.value)}
+                      className="w-full border border-gray-200 rounded-lg p-2.5 pl-8 bg-gray-50 text-xs font-bold cursor-pointer relative"
+                    />
+                  </div>
                 </div>
 
                 {/* Initial Status */}

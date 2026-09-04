@@ -177,12 +177,12 @@ export default function OrderTab({
   });
 
   return (
-    <div id="order-tab-container" className="flex flex-col h-full space-y-6 overflow-y-auto">
-      {/* Upper Layout: Booking Form (Full-width centered) */}
+    <div id="order-tab-container" className="flex flex-col h-full gap-6">
+      {/* Upper Layout: Booking Form (Full-width) */}
       <div className="w-full shrink-0">
         
         {/* Booking Form */}
-        <div className="w-full max-w-4xl mx-auto bg-gray-50/50 p-5 rounded-xl border border-gray-200 shadow-sm space-y-4">
+        <div className="w-full bg-gray-50/50 p-5 rounded-xl border border-gray-200 shadow-sm space-y-4">
           <div>
             <h3 className="text-sm font-black text-gray-800 flex items-center gap-2">
               <Calendar size={18} className="text-[#2F2FE4]" />
@@ -196,22 +196,22 @@ export default function OrderTab({
           <form onSubmit={handleSubmit} className="space-y-4">
             
             {/* Row 1: Tanggal Berangkat */}
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
               <div className="flex flex-col space-y-1">
                 <label className="text-[11px] font-bold text-gray-400 uppercase tracking-wider pl-1">
                   Tanggal Keberangkatan
                 </label>
                 <div className="relative">
+                  <span className="absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none text-gray-400">
+                    <Calendar size={13} />
+                  </span>
                   <input
                     type="date"
                     required
                     value={departureDate}
                     onChange={(e) => setDepartureDate(e.target.value)}
-                    className="w-full px-4 py-2.5 bg-white border border-[#CCCCCC] rounded-lg text-gray-800 text-xs font-semibold focus:outline-none focus:ring-2 focus:ring-[#2F2FE4]/20 cursor-pointer"
+                    className="w-full pl-8 pr-3 py-2.5 bg-white border border-[#CCCCCC] rounded-lg text-gray-800 text-xs font-semibold focus:outline-none focus:ring-2 focus:ring-[#2F2FE4]/20 cursor-pointer relative"
                   />
-                  <div className="absolute inset-y-0 right-0 flex items-center pr-4 pointer-events-none text-gray-400">
-                    <Calendar size={14} />
-                  </div>
                 </div>
               </div>
 
@@ -220,60 +220,57 @@ export default function OrderTab({
                   Jam Keberangkatan
                 </label>
                 <div className="relative">
+                  <span className="absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none text-gray-400">
+                    <Clock size={13} />
+                  </span>
                   <input
                     type="time"
                     required
                     value={departureTime}
                     onChange={(e) => setDepartureTime(e.target.value)}
-                    className="w-full px-4 py-2.5 bg-white border border-[#CCCCCC] rounded-lg text-gray-800 text-xs font-semibold focus:outline-none focus:ring-2 focus:ring-[#2F2FE4]/20 cursor-pointer"
+                    className="w-full pl-8 pr-3 py-2.5 bg-white border border-[#CCCCCC] rounded-lg text-gray-800 text-xs font-semibold focus:outline-none focus:ring-2 focus:ring-[#2F2FE4]/20 cursor-pointer relative"
                   />
-                  <div className="absolute inset-y-0 right-0 flex items-center pr-4 pointer-events-none text-gray-400">
-                    <Clock size={14} />
-                  </div>
                 </div>
               </div>
-            </div>
 
-            {/* Row 1.5: Tanggal Selesai / Kembali */}
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div className="flex flex-col space-y-1">
                 <label className="text-[11px] font-bold text-gray-400 uppercase tracking-wider pl-1">
-                  Tanggal Selesai / Kembali (Estimasi)
+                  Tanggal Selesai / Kembali
                 </label>
                 <div className="relative">
+                  <span className="absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none text-gray-400">
+                    <Calendar size={13} />
+                  </span>
                   <input
                     type="date"
                     required
                     value={returnDate}
                     onChange={(e) => setReturnDate(e.target.value)}
-                    className="w-full px-4 py-2.5 bg-white border border-[#CCCCCC] rounded-lg text-gray-800 text-xs font-semibold focus:outline-none focus:ring-2 focus:ring-[#2F2FE4]/20 cursor-pointer"
+                    className="w-full pl-8 pr-3 py-2.5 bg-white border border-[#CCCCCC] rounded-lg text-gray-800 text-xs font-semibold focus:outline-none focus:ring-2 focus:ring-[#2F2FE4]/20 cursor-pointer relative"
                   />
-                  <div className="absolute inset-y-0 right-0 flex items-center pr-4 pointer-events-none text-gray-400">
-                    <Calendar size={14} />
-                  </div>
                 </div>
               </div>
 
               <div className="flex flex-col space-y-1">
                 <label className="text-[11px] font-bold text-gray-400 uppercase tracking-wider pl-1">
-                  Jam Selesai / Kembali (Estimasi)
+                  Jam Selesai / Kembali
                 </label>
                 <div className="relative">
+                  <span className="absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none text-gray-400">
+                    <Clock size={13} />
+                  </span>
                   <input
                     type="time"
                     required
                     value={returnTime}
                     onChange={(e) => setReturnTime(e.target.value)}
-                    className="w-full px-4 py-2.5 bg-white border border-[#CCCCCC] rounded-lg text-gray-800 text-xs font-semibold focus:outline-none focus:ring-2 focus:ring-[#2F2FE4]/20 cursor-pointer"
+                    className="w-full pl-8 pr-3 py-2.5 bg-white border border-[#CCCCCC] rounded-lg text-gray-800 text-xs font-semibold focus:outline-none focus:ring-2 focus:ring-[#2F2FE4]/20 cursor-pointer relative"
                   />
-                  <div className="absolute inset-y-0 right-0 flex items-center pr-4 pointer-events-none text-gray-400">
-                    <Clock size={14} />
-                  </div>
                 </div>
               </div>
             </div>
 
-            {/* Row 2: Dropdowns */}
+            {/* Row 2: Dropdowns Driver & Armada */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div className="flex flex-col space-y-1">
                 <label className="text-[11px] font-bold text-gray-400 uppercase tracking-wider pl-1">
@@ -369,7 +366,7 @@ export default function OrderTab({
                 </button>
               </div>
 
-              <div className="space-y-2">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
                 {routes.map((route, rIndex) => (
                   <div key={rIndex} className="flex items-center gap-2">
                     <span className="text-[9px] font-black text-gray-400 w-16 bg-gray-50 border border-gray-200 rounded px-1.5 py-1.5 text-center select-none uppercase shrink-0">
@@ -470,8 +467,8 @@ export default function OrderTab({
 
       </div>
 
-      {/* Bottom Layout: Active Orders List */}
-      <div id="order-list-card" className="flex-1 bg-gray-50/30 border border-gray-200 rounded-xl p-5 overflow-y-auto shadow-sm min-h-[300px]">
+      {/* Bottom Layout: Active Orders List — flex-1 fills remaining space */}
+      <div id="order-list-card" className="flex-1 bg-gray-50/30 border border-gray-200 rounded-xl p-5 overflow-y-auto shadow-sm min-h-[200px]">
         <div className="flex items-center justify-between mb-4 pb-2 border-b border-gray-100">
           <div>
             <h4 className="text-xs font-extrabold text-gray-500 uppercase tracking-widest">
