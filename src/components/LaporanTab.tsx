@@ -31,7 +31,8 @@ import {
   CheckCircle,
   FileText,
   Users,
-  Calendar
+  Calendar,
+  Printer
 } from 'lucide-react';
 
 interface LaporanTabProps {
@@ -54,11 +55,25 @@ export default function LaporanTab({
   ajkInvoiceList = [],
 }: LaporanTabProps) {
   const [filterStatus, setFilterStatus] = useState<'Semua' | 'Selesai' | 'Dibatalkan'>('Semua');
+  const [showPrintKeuangan, setShowPrintKeuangan] = useState(false);
+  const [showPrintInvoice, setShowPrintInvoice] = useState(false);
 
   // --- DYNAMIC DATE FILTER STATES ---
   const [datePreset, setDatePreset] = useState<string>('30_days');
   const [startDate, setStartDate] = useState<string>('2026-06-07'); // Default start date for 30_days preset relative to system date 2026-07-06
   const [endDate, setEndDate] = useState<string>('2026-07-06');     // Default end date
+
+  // Ctrl+P shortcut untuk print modal yang aktif
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if ((showPrintKeuangan || showPrintInvoice) && (e.ctrlKey || e.metaKey) && e.key === 'p') {
+        e.preventDefault();
+        window.print();
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [showPrintKeuangan, showPrintInvoice]);
 
   // Synchronize preset and custom dates
   useEffect(() => {
@@ -645,19 +660,37 @@ export default function LaporanTab({
   return (
     <div id="laporan-tab-container" className="flex flex-col h-full space-y-6 overflow-y-auto pb-8 pr-1">
       
-      {/* HEADER CONTROLS AND EXCEL EXPORT BUTTON */}
+      {/* HEADER CONTROLS AND EXPORT BUTTONS */}
       <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 bg-white p-5 rounded-2xl border border-gray-200 shadow-sm">
         <div>
           <h2 className="text-lg font-black text-gray-800">Laporan Operasional &amp; Keuangan</h2>
           <p className="text-xs text-gray-500 font-semibold mt-0.5">Analisis perbandingan biaya harian, pendapatan kotor, biaya servis, dan profit bersih armada.</p>
         </div>
-        <button
-          onClick={handleExportExcel}
-          className="flex items-center gap-2 bg-[#1D6F42] hover:bg-[#155231] text-white font-extrabold text-sm px-5 py-2.5 rounded-xl shadow-md border border-transparent transition-all hover:scale-[1.02] transform active:scale-95 shrink-0"
-        >
-          <FileSpreadsheet size={18} />
-          <span>Export ke Excel (.xls)</span>
-        </button>
+        <div className="flex flex-wrap items-center gap-2 shrink-0">
+          <button
+            onClick={() => setShowPrintKeuangan(true)}
+            className="flex items-center gap-2 bg-[#2F2FE4] hover:bg-[#2020D0] text-white font-extrabold text-sm px-4 py-2.5 rounded-xl shadow-md border border-transparent transition-all hover:scale-[1.02] transform active:scale-95"
+            title="Cetak / Export PDF Laporan Keuangan Trip"
+          >
+            <Printer size={16} />
+            <span>Cetak Lap. Keuangan</span>
+          </button>
+          <button
+            onClick={() => setShowPrintInvoice(true)}
+            className="flex items-center gap-2 bg-indigo-600 hover:bg-indigo-700 text-white font-extrabold text-sm px-4 py-2.5 rounded-xl shadow-md border border-transparent transition-all hover:scale-[1.02] transform active:scale-95"
+            title="Cetak / Export PDF Laporan Tagihan Invoice AJK"
+          >
+            <Printer size={16} />
+            <span>Cetak Lap. Invoice AJK</span>
+          </button>
+          <button
+            onClick={handleExportExcel}
+            className="flex items-center gap-2 bg-[#1D6F42] hover:bg-[#155231] text-white font-extrabold text-sm px-4 py-2.5 rounded-xl shadow-md border border-transparent transition-all hover:scale-[1.02] transform active:scale-95"
+          >
+            <FileSpreadsheet size={16} />
+            <span>Export Excel</span>
+          </button>
+        </div>
       </div>
 
 
@@ -1169,6 +1202,351 @@ export default function LaporanTab({
           </table>
         </div>
       </div>
+
+      {/* ===== MODAL PRINT PREVIEW: LAPORAN KEUANGAN TRIP ===== */}
+      {showPrintKeuangan && (
+        <div className="fixed inset-0 z-50 overflow-y-auto flex items-center justify-center p-4 bg-gray-950/60 backdrop-blur-sm">
+          <div className="bg-white rounded-3xl border border-gray-200 shadow-2xl w-full max-w-4xl overflow-hidden">
+
+            {/* Toolbar */}
+            <div className="bg-gray-50 border-b border-gray-150 p-4 flex items-center justify-between no-print-element">
+              <span className="text-xs font-black text-gray-800 flex items-center gap-1.5">
+                <Printer className="text-[#2F2FE4]" size={16} />
+                <span>Preview Laporan Keuangan Trip</span>
+                <span className="ml-2 text-[10px] font-bold text-gray-400 bg-gray-100 px-2 py-0.5 rounded-full">
+                  Periode: {startDate} s/d {endDate}
+                </span>
+              </span>
+              <div className="flex items-center gap-2">
+                <button
+                  onClick={() => window.print()}
+                  className="bg-[#2F2FE4] hover:bg-[#2020D0] text-white text-xs font-extrabold px-3 py-1.5 rounded-lg shadow-xs flex items-center gap-1 cursor-pointer transition-all active:scale-95"
+                >
+                  <Printer size={13} />
+                  <span>Cetak / Unduh PDF</span>
+                </button>
+                <button
+                  onClick={() => setShowPrintKeuangan(false)}
+                  className="bg-gray-200 hover:bg-gray-300 text-gray-700 text-xs font-bold px-3 py-1.5 rounded-lg cursor-pointer"
+                >
+                  Tutup
+                </button>
+              </div>
+            </div>
+
+            {/* Printable Area */}
+            <div className="p-6 md:p-8 max-h-[75vh] overflow-y-auto" id="printable-keuangan-area">
+              <style dangerouslySetInnerHTML={{__html: `
+                @media print {
+                  body * { visibility: hidden !important; }
+                  #printable-keuangan-area, #printable-keuangan-area * { visibility: visible !important; }
+                  #printable-keuangan-area {
+                    position: absolute !important;
+                    left: 0 !important; top: 0 !important;
+                    width: 100% !important;
+                    max-height: none !important;
+                    overflow: visible !important;
+                    padding: 24px !important;
+                    background: white !important;
+                  }
+                  .no-print-element { display: none !important; }
+                }
+              `}} />
+
+              <div className="space-y-6">
+                {/* Letterhead */}
+                <div className="flex items-start justify-between border-b-2 border-gray-100 pb-5">
+                  <div className="space-y-1">
+                    <div className="flex items-center gap-2">
+                      <div className="bg-[#2F2FE4] p-1.5 rounded-lg text-white"><Building size={18} /></div>
+                      <span className="text-sm font-black tracking-tight text-gray-900 uppercase">PT Armada Trans Logistik</span>
+                    </div>
+                    <p className="text-[10px] text-gray-400 font-semibold leading-relaxed">
+                      Jl. Boulevard Barat No. 88, Kelapa Gading, Jakarta Utara<br />
+                      Telp: (021) 4588-9000 | operasional@armadatrans.com
+                    </p>
+                  </div>
+                  <div className="text-right">
+                    <h2 className="text-lg font-black text-[#2F2FE4] uppercase tracking-tight">Laporan Keuangan Trip</h2>
+                    <p className="text-[10px] text-gray-400 font-bold mt-1">Periode: {startDate} s/d {endDate}</p>
+                    <p className="text-[10px] text-gray-400 font-bold">Dicetak: {new Date().toLocaleDateString('id-ID', {day:'numeric', month:'long', year:'numeric'})}</p>
+                  </div>
+                </div>
+
+                {/* Summary Cards */}
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+                  {[
+                    { label: 'Total Pendapatan', value: formatRupiah(totalRevenue), color: 'text-green-600', bg: 'bg-green-50' },
+                    { label: 'Biaya Operasional', value: formatRupiah(totalOperationalCost), color: 'text-amber-600', bg: 'bg-amber-50' },
+                    { label: 'Biaya Perbaikan', value: formatRupiah(totalMaintenanceCost), color: 'text-red-600', bg: 'bg-red-50' },
+                    { label: 'Pendapatan Bersih', value: formatRupiah(netProfit), color: netProfit >= 0 ? 'text-[#2F2FE4]' : 'text-red-600', bg: 'bg-indigo-50' },
+                  ].map((card) => (
+                    <div key={card.label} className={`${card.bg} rounded-xl p-3 border border-gray-100`}>
+                      <p className="text-[9px] font-black text-gray-500 uppercase tracking-wider">{card.label}</p>
+                      <p className={`text-sm font-black mt-1 ${card.color}`}>{card.value}</p>
+                    </div>
+                  ))}
+                </div>
+                <div className="bg-gray-50 rounded-xl p-3 border border-gray-200 text-xs font-bold text-gray-600 flex items-center justify-between">
+                  <span>Margin Keuntungan Bersih</span>
+                  <span className={`text-sm font-black ${profitMarginPercent >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+                    {profitMarginPercent.toFixed(1)}%
+                  </span>
+                </div>
+
+                {/* Tabel Trip */}
+                <div>
+                  <h3 className="text-xs font-black text-gray-700 uppercase tracking-wider mb-2 flex items-center gap-1.5">
+                    <span>Detail Riwayat Perjalanan</span>
+                    <span className="bg-gray-200 text-gray-600 px-2 py-0.5 rounded-full text-[9px]">{filteredCompletedTrips.length} Trip Selesai</span>
+                  </h3>
+                  <table className="w-full text-left text-[10px] border-collapse">
+                    <thead>
+                      <tr className="bg-[#2F2FE4] text-white">
+                        <th className="py-2 px-3 font-black rounded-tl-lg">Driver</th>
+                        <th className="py-2 px-3 font-black">No. Plat</th>
+                        <th className="py-2 px-3 font-black">Rute</th>
+                        <th className="py-2 px-3 font-black">Tanggal</th>
+                        <th className="py-2 px-3 font-black text-right">Pendapatan</th>
+                        <th className="py-2 px-3 font-black text-right">Biaya Ops</th>
+                        <th className="py-2 px-3 font-black text-right rounded-tr-lg">Profit</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-gray-100">
+                      {filteredCompletedTrips.length === 0 ? (
+                        <tr>
+                          <td colSpan={7} className="py-6 text-center text-gray-400 font-bold">Tidak ada data trip dalam periode ini</td>
+                        </tr>
+                      ) : filteredCompletedTrips.map((trip) => {
+                        const profit = (trip.revenue || 0) - (trip.operationalCost || 0);
+                        return (
+                          <tr key={trip.id} className="hover:bg-gray-50/50">
+                            <td className="py-2 px-3 font-bold text-gray-800">{trip.driverName}</td>
+                            <td className="py-2 px-3 text-gray-600 font-mono">{trip.plateNumber}</td>
+                            <td className="py-2 px-3 text-gray-600">{trip.origin} → {trip.destination}</td>
+                            <td className="py-2 px-3 text-gray-500">{trip.departureDate}</td>
+                            <td className="py-2 px-3 text-right font-bold text-green-700">{formatRupiah(trip.revenue || 0)}</td>
+                            <td className="py-2 px-3 text-right text-gray-500">{formatRupiah(trip.operationalCost || 0)}</td>
+                            <td className={`py-2 px-3 text-right font-black ${profit >= 0 ? 'text-[#2F2FE4]' : 'text-red-600'}`}>{formatRupiah(profit)}</td>
+                          </tr>
+                        );
+                      })}
+                    </tbody>
+                    {filteredCompletedTrips.length > 0 && (
+                      <tfoot>
+                        <tr className="bg-gray-100 font-black text-xs border-t-2 border-gray-300">
+                          <td colSpan={4} className="py-2 px-3 text-gray-700 rounded-bl-lg">TOTAL ({filteredCompletedTrips.length} Trip)</td>
+                          <td className="py-2 px-3 text-right text-green-700">{formatRupiah(totalRevenue)}</td>
+                          <td className="py-2 px-3 text-right text-gray-600">{formatRupiah(totalOperationalCost)}</td>
+                          <td className={`py-2 px-3 text-right rounded-br-lg ${netProfit >= 0 ? 'text-[#2F2FE4]' : 'text-red-600'}`}>{formatRupiah(netProfit)}</td>
+                        </tr>
+                      </tfoot>
+                    )}
+                  </table>
+                </div>
+
+                {/* Sign-off */}
+                <div className="flex justify-end pt-4 border-t border-gray-100">
+                  <div className="text-center text-xs text-gray-500 font-bold space-y-1">
+                    <p>Jakarta, {new Date().toLocaleDateString('id-ID', {day:'numeric', month:'long', year:'numeric'})}</p>
+                    <div className="h-12"></div>
+                    <p className="font-black text-gray-800 underline">Santi Rahayu, M.Ak</p>
+                    <p className="text-[10px] text-gray-400">Finance &amp; Operations Manager</p>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* Footer */}
+            <div className="bg-gray-50 border-t border-gray-150 p-4 flex justify-end gap-2.5 no-print-element">
+              <button onClick={() => setShowPrintKeuangan(false)} className="bg-gray-100 hover:bg-gray-200 text-gray-700 font-bold text-xs px-4 py-2 rounded-xl cursor-pointer">Tutup</button>
+              <button onClick={() => window.print()} className="bg-[#2F2FE4] hover:bg-[#2020D0] text-white font-extrabold text-xs px-4 py-2 rounded-xl shadow-xs flex items-center gap-1.5 cursor-pointer">
+                <Printer size={14} /><span>Cetak / Unduh PDF</span>
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ===== MODAL PRINT PREVIEW: LAPORAN TAGIHAN INVOICE AJK ===== */}
+      {showPrintInvoice && (
+        <div className="fixed inset-0 z-50 overflow-y-auto flex items-center justify-center p-4 bg-gray-950/60 backdrop-blur-sm">
+          <div className="bg-white rounded-3xl border border-gray-200 shadow-2xl w-full max-w-4xl overflow-hidden">
+
+            {/* Toolbar */}
+            <div className="bg-gray-50 border-b border-gray-150 p-4 flex items-center justify-between no-print-element">
+              <span className="text-xs font-black text-gray-800 flex items-center gap-1.5">
+                <Printer className="text-indigo-600" size={16} />
+                <span>Preview Laporan Tagihan Invoice AJK</span>
+                <span className="ml-2 text-[10px] font-bold text-gray-400 bg-gray-100 px-2 py-0.5 rounded-full">
+                  Periode: {startDate} s/d {endDate}
+                </span>
+              </span>
+              <div className="flex items-center gap-2">
+                <button
+                  onClick={() => window.print()}
+                  className="bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-extrabold px-3 py-1.5 rounded-lg shadow-xs flex items-center gap-1 cursor-pointer transition-all active:scale-95"
+                >
+                  <Printer size={13} />
+                  <span>Cetak / Unduh PDF</span>
+                </button>
+                <button
+                  onClick={() => setShowPrintInvoice(false)}
+                  className="bg-gray-200 hover:bg-gray-300 text-gray-700 text-xs font-bold px-3 py-1.5 rounded-lg cursor-pointer"
+                >
+                  Tutup
+                </button>
+              </div>
+            </div>
+
+            {/* Printable Area */}
+            <div className="p-6 md:p-8 max-h-[75vh] overflow-y-auto" id="printable-invoice-laporan-area">
+              <style dangerouslySetInnerHTML={{__html: `
+                @media print {
+                  body * { visibility: hidden !important; }
+                  #printable-invoice-laporan-area, #printable-invoice-laporan-area * { visibility: visible !important; }
+                  #printable-invoice-laporan-area {
+                    position: absolute !important;
+                    left: 0 !important; top: 0 !important;
+                    width: 100% !important;
+                    max-height: none !important;
+                    overflow: visible !important;
+                    padding: 24px !important;
+                    background: white !important;
+                  }
+                  .no-print-element { display: none !important; }
+                }
+              `}} />
+
+              <div className="space-y-6">
+                {/* Letterhead */}
+                <div className="flex items-start justify-between border-b-2 border-gray-100 pb-5">
+                  <div className="space-y-1">
+                    <div className="flex items-center gap-2">
+                      <div className="bg-indigo-600 p-1.5 rounded-lg text-white"><Building size={18} /></div>
+                      <span className="text-sm font-black tracking-tight text-gray-900 uppercase">PT Armada Trans Logistik</span>
+                    </div>
+                    <p className="text-[10px] text-gray-400 font-semibold leading-relaxed">
+                      Jl. Boulevard Barat No. 88, Kelapa Gading, Jakarta Utara<br />
+                      Telp: (021) 4588-9000 | billing@armadatrans.com
+                    </p>
+                  </div>
+                  <div className="text-right">
+                    <h2 className="text-lg font-black text-indigo-600 uppercase tracking-tight">Rekap Tagihan Invoice AJK</h2>
+                    <p className="text-[10px] text-gray-400 font-bold mt-1">Periode Jatuh Tempo: {startDate} s/d {endDate}</p>
+                    <p className="text-[10px] text-gray-400 font-bold">Dicetak: {new Date().toLocaleDateString('id-ID', {day:'numeric', month:'long', year:'numeric'})}</p>
+                  </div>
+                </div>
+
+                {/* AJK Summary Cards */}
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+                  {[
+                    { label: 'Total Invoice', value: formatRupiah(ajkStats.total), color: 'text-gray-800', bg: 'bg-gray-50' },
+                    { label: 'Sudah Lunas', value: formatRupiah(ajkStats.paid), color: 'text-green-600', bg: 'bg-green-50' },
+                    { label: 'Belum Lunas', value: formatRupiah(ajkStats.unpaid), color: 'text-amber-600', bg: 'bg-amber-50' },
+                    { label: 'Tunggakan Kritis', value: formatRupiah(ajkStats.critical), color: 'text-red-600', bg: 'bg-red-50' },
+                  ].map((card) => (
+                    <div key={card.label} className={`${card.bg} rounded-xl p-3 border border-gray-100`}>
+                      <p className="text-[9px] font-black text-gray-500 uppercase tracking-wider">{card.label}</p>
+                      <p className={`text-sm font-black mt-1 ${card.color}`}>{card.value}</p>
+                    </div>
+                  ))}
+                </div>
+                <div className="bg-indigo-50 rounded-xl p-3 border border-indigo-100 text-xs font-bold text-indigo-800 flex items-center justify-between">
+                  <span>Tingkat Kolektibilitas (% Lunas)</span>
+                  <span className="text-sm font-black text-indigo-700">
+                    {ajkStats.total > 0 ? ((ajkStats.paid / ajkStats.total) * 100).toFixed(1) : '0.0'}%
+                  </span>
+                </div>
+
+                {/* Tabel Invoice */}
+                <div>
+                  <h3 className="text-xs font-black text-gray-700 uppercase tracking-wider mb-2 flex items-center gap-1.5">
+                    <span>Daftar Invoice</span>
+                    <span className="bg-gray-200 text-gray-600 px-2 py-0.5 rounded-full text-[9px]">{filteredAjkInvoiceList.length} Invoice</span>
+                  </h3>
+                  <table className="w-full text-left text-[10px] border-collapse">
+                    <thead>
+                      <tr className="bg-indigo-600 text-white">
+                        <th className="py-2 px-3 font-black rounded-tl-lg">No. Invoice</th>
+                        <th className="py-2 px-3 font-black">Klien</th>
+                        <th className="py-2 px-3 font-black">Bulan</th>
+                        <th className="py-2 px-3 font-black text-right">Nominal</th>
+                        <th className="py-2 px-3 font-black">Jatuh Tempo</th>
+                        <th className="py-2 px-3 font-black">Tunggakan</th>
+                        <th className="py-2 px-3 font-black text-center rounded-tr-lg">Status</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-gray-100">
+                      {filteredAjkInvoiceList.length === 0 ? (
+                        <tr>
+                          <td colSpan={7} className="py-6 text-center text-gray-400 font-bold">Tidak ada invoice dalam periode ini</td>
+                        </tr>
+                      ) : filteredAjkInvoiceList.map((inv) => (
+                        <tr key={inv.id} className={`hover:bg-gray-50/50 ${inv.status === 'Menunggak' && inv.delinquentMonths >= 3 ? 'bg-red-50/30' : ''}`}>
+                          <td className="py-2 px-3 font-mono text-[9px] text-gray-600">{inv.invoiceNumber}</td>
+                          <td className="py-2 px-3 font-bold text-gray-800">{inv.companyName}</td>
+                          <td className="py-2 px-3 text-gray-600">{inv.billingMonth}</td>
+                          <td className="py-2 px-3 text-right font-bold text-gray-800">{formatRupiah(inv.amount)}</td>
+                          <td className="py-2 px-3 text-gray-500">{inv.dueDate}</td>
+                          <td className="py-2 px-3 text-center">
+                            {inv.delinquentMonths > 0 ? (
+                              <span className={`font-black px-1.5 py-0.5 rounded-full text-[9px] ${inv.delinquentMonths >= 3 ? 'bg-red-100 text-red-700' : 'bg-amber-100 text-amber-700'}`}>
+                                {inv.delinquentMonths} Bln
+                              </span>
+                            ) : <span className="text-gray-300">—</span>}
+                          </td>
+                          <td className="py-2 px-3 text-center">
+                            <span className={`px-2 py-0.5 rounded-full text-[9px] font-black uppercase ${
+                              inv.status === 'Lunas' ? 'bg-green-100 text-green-700' :
+                              inv.status === 'Menunggak' ? 'bg-red-100 text-red-700' :
+                              'bg-amber-100 text-amber-700'
+                            }`}>
+                              {inv.status}
+                            </span>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                    {filteredAjkInvoiceList.length > 0 && (
+                      <tfoot>
+                        <tr className="bg-gray-100 font-black text-xs border-t-2 border-gray-300">
+                          <td colSpan={3} className="py-2 px-3 text-gray-700 rounded-bl-lg">TOTAL ({filteredAjkInvoiceList.length} Invoice)</td>
+                          <td className="py-2 px-3 text-right text-gray-800">{formatRupiah(ajkStats.total)}</td>
+                          <td colSpan={3} className="py-2 px-3 text-right rounded-br-lg">
+                            <span className="text-green-700">Lunas: {formatRupiah(ajkStats.paid)}</span>
+                            <span className="mx-2 text-gray-400">|</span>
+                            <span className="text-amber-700">Belum: {formatRupiah(ajkStats.unpaid)}</span>
+                          </td>
+                        </tr>
+                      </tfoot>
+                    )}
+                  </table>
+                </div>
+
+                {/* Sign-off */}
+                <div className="flex justify-end pt-4 border-t border-gray-100">
+                  <div className="text-center text-xs text-gray-500 font-bold space-y-1">
+                    <p>Jakarta, {new Date().toLocaleDateString('id-ID', {day:'numeric', month:'long', year:'numeric'})}</p>
+                    <div className="h-12"></div>
+                    <p className="font-black text-gray-800 underline">Santi Rahayu, M.Ak</p>
+                    <p className="text-[10px] text-gray-400">Finance &amp; Billing Department Head</p>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* Footer */}
+            <div className="bg-gray-50 border-t border-gray-150 p-4 flex justify-end gap-2.5 no-print-element">
+              <button onClick={() => setShowPrintInvoice(false)} className="bg-gray-100 hover:bg-gray-200 text-gray-700 font-bold text-xs px-4 py-2 rounded-xl cursor-pointer">Tutup</button>
+              <button onClick={() => window.print()} className="bg-indigo-600 hover:bg-indigo-700 text-white font-extrabold text-xs px-4 py-2 rounded-xl shadow-xs flex items-center gap-1.5 cursor-pointer">
+                <Printer size={14} /><span>Cetak / Unduh PDF</span>
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
     </div>
   );
 }

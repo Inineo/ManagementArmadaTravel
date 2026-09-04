@@ -7,7 +7,6 @@ import React, { useState } from 'react';
 import { Order } from '../types';
 import { ArrowLeft, MapPin, Clock, Calendar, ShieldCheck, CheckCircle, XCircle } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
-import busImage from '../assets/images/bus_report_detail_1783238150169.jpg';
 
 interface DetailPerjalananProps {
   order: Order;
@@ -107,10 +106,9 @@ export default function DetailPerjalanan({
         {/* Image Content Canvas */}
         <div className="flex-1 relative bg-black rounded-2xl overflow-hidden shadow-lg border border-gray-200">
           <img
-            src={busImage}
+            src="/bus_report_detail.jpg"
             alt="Foto Laporan Perjalanan"
             className="w-full h-full object-cover"
-            referrerPolicy="no-referrer"
           />
           {/* Text overlay exactly matching Screenshot 1 */}
           <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/90 via-black/60 to-transparent p-6 md:p-8 flex flex-col justify-end text-white">
