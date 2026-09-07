@@ -9,7 +9,9 @@ import ArmadaTab from './components/ArmadaTab';
 import DriverTab from './components/DriverTab';
 import OrderTab from './components/OrderTab';
 import StatusTab from './components/StatusTab';
-import LaporanTab from './components/LaporanTab';
+import LaporanAJK from './components/LaporanAJK';
+import LaporanKinerja from './components/LaporanKinerja';
+import LaporanKeuangan from './components/LaporanKeuangan';
 import DetailPerjalanan from './components/DetailPerjalanan';
 import PerbaikanTab from './components/PerbaikanTab';
 import AjkTab from './components/AjkTab';
@@ -381,46 +383,45 @@ export default function App() {
   };
 
   const handleResolveMaintenance = (recordId: string, damageId?: string, isAll?: boolean) => {
-    setMaintenanceList((prev) => {
-      const updatedList = prev.map((item) => {
-        if (item.id !== recordId) return item;
+    const updatedList = maintenanceList.map((item) => {
+      if (item.id !== recordId) return item;
 
-        const currentDamages = item.damages || [];
-        const newDamages = currentDamages.map((dmg) => {
-          if (isAll) {
-            return { ...dmg, status: 'Selesai' as const };
-          }
-          if (damageId && dmg.id === damageId) {
-            return { ...dmg, status: 'Selesai' as const };
-          }
-          return dmg;
-        });
-
-        // Check if all damages are 'Selesai' now
-        const allResolved = newDamages.every((d) => d.status === 'Selesai');
-        const newRecordStatus = allResolved ? 'Selesai' : 'Dalam Perbaikan';
-        const completedAt = allResolved ? new Date().toISOString() : undefined;
-
-        return {
-          ...item,
-          damages: newDamages,
-          status: newRecordStatus,
-          completedAt,
-        };
+      const currentDamages = item.damages || [];
+      const newDamages = currentDamages.map((dmg) => {
+        if (isAll) {
+          return { ...dmg, status: 'Selesai' as const };
+        }
+        if (damageId && dmg.id === damageId) {
+          return { ...dmg, status: 'Selesai' as const };
+        }
+        return dmg;
       });
 
-      // If the record became Selesai, we also set the armada status to 'Ready'
-      const targetRecord = updatedList.find((r) => r.id === recordId);
-      if (targetRecord && targetRecord.status === 'Selesai') {
-        setArmadaList((prevArmada) =>
-          prevArmada.map((arm) =>
-            arm.id === targetRecord.armadaId ? { ...arm, status: 'Ready' } : arm
-          )
-        );
-      }
+      // Check if all damages are 'Selesai' now
+      const allResolved = newDamages.every((d) => d.status === 'Selesai');
+      const newRecordStatus: 'Selesai' | 'Dalam Perbaikan' = allResolved ? 'Selesai' : 'Dalam Perbaikan';
 
-      return updatedList;
+      const updatedItem: MaintenanceRecord = {
+        ...item,
+        damages: newDamages,
+        status: newRecordStatus,
+        completedAt: allResolved ? new Date().toISOString() : item.completedAt,
+      };
+
+      return updatedItem;
     });
+
+    setMaintenanceList(updatedList);
+
+    // If the record became Selesai, we also set the armada status to 'Ready'
+    const targetRecord = updatedList.find((r) => r.id === recordId);
+    if (targetRecord && targetRecord.status === 'Selesai') {
+      setArmadaList((prevArmada) =>
+        prevArmada.map((arm) =>
+          arm.id === targetRecord.armadaId ? { ...arm, status: 'Ready' as const } : arm
+        )
+      );
+    }
   };
 
   const handleManualCompleteMaintenance = (armadaId: string) => {
@@ -622,10 +623,6 @@ export default function App() {
             onAddAjk={handleAddAjk}
             onUpdateAjk={handleUpdateAjk}
             onDeleteAjk={handleDeleteAjk}
-            ajkInvoiceList={ajkInvoiceList}
-            onAddAjkInvoice={handleAddAjkInvoice}
-            onUpdateAjkInvoice={handleUpdateAjkInvoice}
-            onDeleteAjkInvoice={handleDeleteAjkInvoice}
           />
         );
       case 'status':
@@ -667,16 +664,33 @@ export default function App() {
             onDeleteMaintenance={handleDeleteMaintenance}
           />
         );
-      case 'laporan':
+
+      case 'laporan-ajk':
         return (
-          <LaporanTab
+          <LaporanAJK
+            ajkList={ajkList}
+            ajkInvoiceList={ajkInvoiceList}
+            onAddAjkInvoice={handleAddAjkInvoice}
+            onUpdateAjkInvoice={handleUpdateAjkInvoice}
+            onDeleteAjkInvoice={handleDeleteAjkInvoice}
+          />
+        );
+      case 'laporan-kinerja':
+        return (
+          <LaporanKinerja
             ordersList={ordersList}
             driversList={driversList}
             armadaList={armadaList}
             historyList={historyList}
+          />
+        );
+      case 'laporan-keuangan':
+        return (
+          <LaporanKeuangan
+            ordersList={ordersList}
+            historyList={historyList}
             maintenanceList={maintenanceList}
             ajkInvoiceList={ajkInvoiceList}
-            onClearHistory={handleClearHistory}
           />
         );
       default:

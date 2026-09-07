@@ -7,6 +7,7 @@ import React, { useState } from 'react';
 import { Order } from '../types';
 import { SlidersHorizontal, ArrowRight, CheckCircle, XCircle } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
+import StatusBadge from './StatusBadge';
 
 interface StatusTabProps {
   ordersList: Order[];
@@ -109,15 +110,7 @@ export default function StatusTab({
 
                   {/* Status badge with green dot pulse */}
                   <div className="w-full md:w-3/12 flex items-center justify-start md:justify-center">
-                    <div className="flex items-center gap-2 px-4 py-2 bg-green-50 rounded-full border border-green-100">
-                      <span className="relative flex h-3 w-3">
-                        <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-green-400 opacity-75"></span>
-                        <span className="relative inline-flex rounded-full h-3 w-3 bg-[#38C172]"></span>
-                      </span>
-                      <span className="text-sm font-bold text-[#38C172]">
-                        Dalam Perjalanan
-                      </span>
-                    </div>
+                    <StatusBadge status={trip.status} size="md" />
                   </div>
 
                   {/* Action trigger button */}

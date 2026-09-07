@@ -5,8 +5,9 @@
 
 import React, { useState } from 'react';
 import { Driver, Armada, Order, MaintenanceRecord } from '../types';
-import { Trash2, Calendar, Clock, MapPin, ChevronDown, CheckCircle } from 'lucide-react';
+import { Trash2, Plus, ChevronDown } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
+import StatusBadge from './StatusBadge';
 
 interface OrderTabProps {
   ordersList: Order[];
@@ -32,122 +33,54 @@ export default function OrderTab({
   const [returnDate, setReturnDate] = useState('');
   const [returnTime, setReturnTime] = useState('');
   const [routes, setRoutes] = useState<string[]>(['', '']);
-  const [revenue, setRevenue] = useState('4500000');
-  const [operationalCost, setOperationalCost] = useState('1200000');
+  const [revenue, setRevenue] = useState('');
+  const [operationalCost, setOperationalCost] = useState('');
   const [errorMsg, setErrorMsg] = useState('');
+  const [expandedOrderId, setExpandedOrderId] = useState<string | null>(null);
 
-  // Helper function to check if two date ranges overlap
-  const isOverlapping = (startA: string, endA: string, startB: string, endB: string) => {
-    // Standard string date comparison works safely for YYYY-MM-DD
-    return startA <= endB && endA >= startB;
-  };
-
-  // Check schedule conflicts in real-time on data level
-  const selectedDriver = driversList.find((d) => d.id === selectedDriverId);
-  const selectedArmada = armadaList.find((a) => a.id === selectedArmadaId);
-
-  const driverConflict = selectedDriver && departureDate && returnDate
-    ? ordersList.find(
-        (o) => o.driverId === selectedDriver.id && 
-               o.status === 'Dalam Perjalanan' && 
-               isOverlapping(departureDate, returnDate, o.departureDate, o.returnDate)
-      )
-    : null;
-
-  const armadaConflict = selectedArmada && departureDate && returnDate
-    ? ordersList.find(
-        (o) => o.armadaId === selectedArmada.id && 
-               o.status === 'Dalam Perjalanan' && 
-               isOverlapping(departureDate, returnDate, o.departureDate, o.returnDate)
-      )
-    : null;
+  // Available drivers and armadas (not in maintenance or trip)
+  const availableDrivers = driversList.filter((d) => d.status === 'Ready');
+  const availableArmada = armadaList.filter((a) => a.status === 'Ready');
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     setErrorMsg('');
 
-    if (!selectedDriverId) {
-      setErrorMsg('Silakan pilih driver terlebih dahulu.');
-      return;
-    }
-    if (!selectedArmadaId) {
-      setErrorMsg('Silakan pilih armada terlebih dahulu.');
-      return;
-    }
-    if (!departureDate) {
-      setErrorMsg('Silakan tentukan tanggal berangkat.');
-      return;
-    }
-    if (!departureTime) {
-      setErrorMsg('Silakan tentukan jam berangkat.');
-      return;
-    }
-    if (!returnDate) {
-      setErrorMsg('Silakan tentukan tanggal selesai/kembali.');
-      return;
-    }
-    if (!returnTime) {
-      setErrorMsg('Silakan tentukan jam selesai/kembali.');
-      return;
-    }
-    if (departureDate && returnDate && returnDate < departureDate) {
-      setErrorMsg('Tanggal selesai/kembali tidak boleh sebelum tanggal keberangkatan.');
+    if (!selectedDriverId || !selectedArmadaId || !departureDate || !returnDate) {
+      setErrorMsg('Mohon lengkapi semua field yang wajib diisi');
       return;
     }
 
-    // Validate schedule conflicts on form submit as a final safeguard
-    if (driverConflict) {
-      setErrorMsg(`Conflict: Driver ${selectedDriver?.name} sudah memiliki jadwal rute pada rentang tanggal tersebut.`);
-      return;
-    }
-    if (armadaConflict) {
-      setErrorMsg(`Conflict: Armada ${selectedArmada?.plateNumber} sudah memiliki jadwal rute pada rentang tanggal tersebut.`);
+    if (returnDate < departureDate) {
+      setErrorMsg('Tanggal kembali tidak boleh lebih awal dari tanggal berangkat');
       return;
     }
 
-    const filteredRoutes = routes.map((r) => r.trim()).filter((r) => r !== '');
-    if (filteredRoutes.length < 2) {
-      setErrorMsg('Rute perjalanan harus memiliki minimal lokasi awal dan lokasi akhir.');
-      return;
-    }
-    if (routes.some((r) => !r.trim())) {
-      setErrorMsg('Semua kolom rute (titik singgah/tujuan) wajib diisi.');
-      return;
-    }
+    const selectedDriver = driversList.find((d) => d.id === selectedDriverId);
+    const selectedArmada = armadaList.find((a) => a.id === selectedArmadaId);
 
-    const origin = routes[0].trim();
-    const destination = routes[routes.length - 1].trim();
+    if (selectedDriver && selectedArmada) {
+      const origin = routes[0] || 'Titik Awal';
+      const destination = routes[routes.length - 1] || 'Tujuan';
 
-    const revNum = parseFloat(revenue) || 0;
-    const opCostNum = parseFloat(operationalCost) || 0;
-
-    if (revNum < 0 || opCostNum < 0) {
-      setErrorMsg('Nilai pendapatan dan biaya operasional tidak boleh negatif.');
-      return;
-    }
-
-    const driver = driversList.find((d) => d.id === selectedDriverId);
-    const armada = armadaList.find((a) => a.id === selectedArmadaId);
-
-    if (driver && armada) {
       onAddOrder({
-        driverId: selectedDriverId,
-        driverName: driver.name,
-        armadaId: selectedArmadaId,
-        plateNumber: armada.plateNumber,
-        carType: armada.carType,
+        driverId: selectedDriver.id,
+        driverName: selectedDriver.name,
+        armadaId: selectedArmada.id,
+        plateNumber: selectedArmada.plateNumber,
+        carType: selectedArmada.carType,
         departureDate,
-        departureTime,
+        departureTime: departureTime || '08:00',
         returnDate,
-        returnTime,
+        returnTime: returnTime || '17:00',
         origin,
         destination,
-        routes: filteredRoutes,
-        revenue: revNum,
-        operationalCost: opCostNum,
+        routes: routes.filter((r) => r.trim() !== ''),
+        revenue: parseFloat(revenue) || 0,
+        operationalCost: parseFloat(operationalCost) || 0,
       });
 
-      // Reset form fields
+      // Reset form
       setSelectedDriverId('');
       setSelectedArmadaId('');
       setDepartureDate('');
@@ -155,405 +88,223 @@ export default function OrderTab({
       setReturnDate('');
       setReturnTime('');
       setRoutes(['', '']);
-      setRevenue('4500000');
-      setOperationalCost('1200000');
+      setRevenue('');
+      setOperationalCost('');
     }
   };
 
-  const formatTime = (timeStr: string) => {
-    if (!timeStr) return '';
-    const [hoursStr, minutesStr] = timeStr.split(':');
-    const hours = parseInt(hoursStr, 10);
-    const ampm = hours >= 12 ? 'PM' : 'AM';
-    const formattedHours = hours % 12 || 12;
-    const padHours = formattedHours < 10 ? `0${formattedHours}` : formattedHours;
-    return `${padHours}.${minutesStr} ${ampm}`;
-  };
-
   const activeOrders = ordersList.filter((o) => o.status === 'Dalam Perjalanan');
-  const displayRowsCount = Math.max(3, activeOrders.length);
-  const rowsToRender = Array.from({ length: displayRowsCount }).map((_, index) => {
-    return activeOrders[index] || null;
-  });
 
   return (
-    <div id="order-tab-container" className="flex flex-col h-full gap-6">
-      {/* Upper Layout: Booking Form (Full-width) */}
-      <div className="w-full shrink-0">
+    <div className="flex flex-col h-full gap-6">
+      {/* Form Section */}
+      <div className="card">
+        <h3 className="text-heading mb-4">Buat Order Baru</h3>
         
-        {/* Booking Form */}
-        <div className="w-full bg-gray-50/50 p-5 rounded-xl border border-gray-200 shadow-sm space-y-4">
-          <div>
-            <h3 className="text-sm font-black text-gray-800 flex items-center gap-2">
-              <Calendar size={18} className="text-[#2F2FE4]" />
-              <span>Formulir Jadwal Pemesanan Rute</span>
-            </h3>
-            <p className="text-[10px] text-gray-400 font-bold mt-0.5">
-              Buat rute perjalanan baru dengan tanggal, driver, armada, dan validasi tabrakan jadwal otomatis (dilakukan di database/sistem).
-            </p>
+        <form onSubmit={handleSubmit} className="space-y-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            {/* Driver Selection */}
+            <div>
+              <label className="text-label block mb-2">Driver</label>
+              <select
+                value={selectedDriverId}
+                onChange={(e) => setSelectedDriverId(e.target.value)}
+                className="input-field"
+                required
+              >
+                <option value="">Pilih Driver</option>
+                {availableDrivers.map((driver) => (
+                  <option key={driver.id} value={driver.id}>
+                    {driver.name}
+                  </option>
+                ))}
+              </select>
+            </div>
+
+            {/* Armada Selection */}
+            <div>
+              <label className="text-label block mb-2">Armada</label>
+              <select
+                value={selectedArmadaId}
+                onChange={(e) => setSelectedArmadaId(e.target.value)}
+                className="input-field"
+                required
+              >
+                <option value="">Pilih Armada</option>
+                {availableArmada.map((armada) => (
+                  <option key={armada.id} value={armada.id}>
+                    {armada.plateNumber} - {armada.carType}
+                  </option>
+                ))}
+              </select>
+            </div>
+
+            {/* Departure Date */}
+            <div>
+              <label className="text-label block mb-2">Tanggal Berangkat</label>
+              <input
+                type="date"
+                value={departureDate}
+                onChange={(e) => setDepartureDate(e.target.value)}
+                className="input-field"
+                required
+              />
+            </div>
+
+            {/* Return Date */}
+            <div>
+              <label className="text-label block mb-2">Tanggal Kembali</label>
+              <input
+                type="date"
+                value={returnDate}
+                onChange={(e) => setReturnDate(e.target.value)}
+                className="input-field"
+                required
+              />
+            </div>
+
+            {/* Origin */}
+            <div>
+              <label className="text-label block mb-2">Dari</label>
+              <input
+                type="text"
+                placeholder="Kota asal"
+                value={routes[0]}
+                onChange={(e) => {
+                  const newRoutes = [...routes];
+                  newRoutes[0] = e.target.value;
+                  setRoutes(newRoutes);
+                }}
+                className="input-field"
+              />
+            </div>
+
+            {/* Destination */}
+            <div>
+              <label className="text-label block mb-2">Ke</label>
+              <input
+                type="text"
+                placeholder="Kota tujuan"
+                value={routes[1]}
+                onChange={(e) => {
+                  const newRoutes = [...routes];
+                  newRoutes[1] = e.target.value;
+                  setRoutes(newRoutes);
+                }}
+                className="input-field"
+              />
+            </div>
           </div>
 
-          <form onSubmit={handleSubmit} className="space-y-4">
-            
-            {/* Row 1: Tanggal Berangkat */}
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-              <div className="flex flex-col space-y-1">
-                <label className="text-[11px] font-bold text-gray-400 uppercase tracking-wider pl-1">
-                  Tanggal Keberangkatan
-                </label>
-                <div className="relative">
-                  <span className="absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none text-gray-400">
-                    <Calendar size={13} />
-                  </span>
-                  <input
-                    type="date"
-                    required
-                    value={departureDate}
-                    onChange={(e) => setDepartureDate(e.target.value)}
-                    className="w-full pl-8 pr-3 py-2.5 bg-white border border-[#CCCCCC] rounded-lg text-gray-800 text-xs font-semibold focus:outline-none focus:ring-2 focus:ring-[#2F2FE4]/20 cursor-pointer relative"
-                  />
-                </div>
-              </div>
-
-              <div className="flex flex-col space-y-1">
-                <label className="text-[11px] font-bold text-gray-400 uppercase tracking-wider pl-1">
-                  Jam Keberangkatan
-                </label>
-                <div className="relative">
-                  <span className="absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none text-gray-400">
-                    <Clock size={13} />
-                  </span>
-                  <input
-                    type="time"
-                    required
-                    value={departureTime}
-                    onChange={(e) => setDepartureTime(e.target.value)}
-                    className="w-full pl-8 pr-3 py-2.5 bg-white border border-[#CCCCCC] rounded-lg text-gray-800 text-xs font-semibold focus:outline-none focus:ring-2 focus:ring-[#2F2FE4]/20 cursor-pointer relative"
-                  />
-                </div>
-              </div>
-
-              <div className="flex flex-col space-y-1">
-                <label className="text-[11px] font-bold text-gray-400 uppercase tracking-wider pl-1">
-                  Tanggal Selesai / Kembali
-                </label>
-                <div className="relative">
-                  <span className="absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none text-gray-400">
-                    <Calendar size={13} />
-                  </span>
-                  <input
-                    type="date"
-                    required
-                    value={returnDate}
-                    onChange={(e) => setReturnDate(e.target.value)}
-                    className="w-full pl-8 pr-3 py-2.5 bg-white border border-[#CCCCCC] rounded-lg text-gray-800 text-xs font-semibold focus:outline-none focus:ring-2 focus:ring-[#2F2FE4]/20 cursor-pointer relative"
-                  />
-                </div>
-              </div>
-
-              <div className="flex flex-col space-y-1">
-                <label className="text-[11px] font-bold text-gray-400 uppercase tracking-wider pl-1">
-                  Jam Selesai / Kembali
-                </label>
-                <div className="relative">
-                  <span className="absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none text-gray-400">
-                    <Clock size={13} />
-                  </span>
-                  <input
-                    type="time"
-                    required
-                    value={returnTime}
-                    onChange={(e) => setReturnTime(e.target.value)}
-                    className="w-full pl-8 pr-3 py-2.5 bg-white border border-[#CCCCCC] rounded-lg text-gray-800 text-xs font-semibold focus:outline-none focus:ring-2 focus:ring-[#2F2FE4]/20 cursor-pointer relative"
-                  />
-                </div>
-              </div>
+          {errorMsg && (
+            <div className="text-caption text-red-600 bg-red-50 border border-red-200 rounded-lg p-3">
+              {errorMsg}
             </div>
+          )}
 
-            {/* Row 2: Dropdowns Driver & Armada */}
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div className="flex flex-col space-y-1">
-                <label className="text-[11px] font-bold text-gray-400 uppercase tracking-wider pl-1">
-                  Pilih Driver
-                </label>
-                <div className="relative">
-                  <select
-                    value={selectedDriverId}
-                    required
-                    onChange={(e) => setSelectedDriverId(e.target.value)}
-                    className={`w-full px-4 py-2.5 bg-white border rounded-lg text-gray-800 text-xs font-semibold appearance-none focus:outline-none focus:ring-2 focus:ring-[#2F2FE4]/20 cursor-pointer ${
-                      driverConflict ? 'border-red-400 bg-red-50/20' : 'border-[#CCCCCC]'
-                    }`}
-                  >
-                    <option value="">-- Pilih Driver --</option>
-                    {driversList.map((driver) => {
-                      const busy = departureDate && returnDate && ordersList.some(
-                        (o) => o.driverId === driver.id && 
-                               o.status === 'Dalam Perjalanan' && 
-                               isOverlapping(departureDate, returnDate, o.departureDate, o.returnDate)
-                      );
-                      return (
-                        <option key={driver.id} value={driver.id} disabled={!!busy}>
-                          {driver.name} {busy ? '(X - Sibuk di tgl ini)' : driver.status !== 'Ready' ? '(Sedang Jalan)' : '(Tersedia)'}
-                        </option>
-                      );
-                    })}
-                  </select>
-                  <div className="absolute inset-y-0 right-0 flex items-center pr-4 pointer-events-none text-gray-400">
-                    <ChevronDown size={16} />
-                  </div>
-                </div>
-                {driverConflict && (
-                  <p className="text-[10px] text-red-500 font-bold mt-1">
-                    ⚠️ {selectedDriver?.name} sudah memiliki rute terjadwal antara {departureDate} s/d {returnDate}!
-                  </p>
-                )}
-              </div>
-
-              <div className="flex flex-col space-y-1">
-                <label className="text-[11px] font-bold text-gray-400 uppercase tracking-wider pl-1">
-                  Pilih Armada
-                </label>
-                <div className="relative">
-                  <select
-                    value={selectedArmadaId}
-                    required
-                    onChange={(e) => setSelectedArmadaId(e.target.value)}
-                    className={`w-full px-4 py-2.5 bg-white border rounded-lg text-gray-800 text-xs font-semibold appearance-none focus:outline-none focus:ring-2 focus:ring-[#2F2FE4]/20 cursor-pointer ${
-                      armadaConflict ? 'border-red-400 bg-red-50/20' : 'border-[#CCCCCC]'
-                    }`}
-                  >
-                    <option value="">-- Pilih Armada --</option>
-                    {armadaList.map((vehicle) => {
-                      const isRepair = vehicle.status === 'Di Perbaiki';
-                      const busy = departureDate && returnDate && ordersList.some(
-                        (o) => o.armadaId === vehicle.id && 
-                               o.status === 'Dalam Perjalanan' && 
-                               isOverlapping(departureDate, returnDate, o.departureDate, o.returnDate)
-                      );
-                      return (
-                        <option key={vehicle.id} value={vehicle.id} disabled={isRepair || !!busy}>
-                          {vehicle.plateNumber} — {vehicle.carType} {isRepair ? '(🛠️ Perbaikan)' : busy ? '(X - Sibuk di tgl ini)' : ''}
-                        </option>
-                      );
-                    })}
-                  </select>
-                  <div className="absolute inset-y-0 right-0 flex items-center pr-4 pointer-events-none text-gray-400">
-                    <ChevronDown size={16} />
-                  </div>
-                </div>
-                {armadaConflict && (
-                  <p className="text-[10px] text-red-500 font-bold mt-1">
-                    ⚠️ Armada {selectedArmada?.plateNumber} sudah memiliki rute terjadwal antara {departureDate} s/d {returnDate}!
-                  </p>
-                )}
-              </div>
-            </div>
-
-            {/* Row 3: Rute Perjalanan */}
-            <div className="bg-white p-4 rounded-lg border border-gray-200 space-y-3">
-              <div className="flex items-center justify-between mb-1">
-                <label className="text-[11px] font-bold text-gray-500 uppercase tracking-wider flex items-center gap-1.5">
-                  <MapPin size={14} className="text-[#2F2FE4]" />
-                  <span>Rute Perjalanan ({routes.length} Titik)</span>
-                </label>
-                <button
-                  type="button"
-                  onClick={() => setRoutes([...routes, ''])}
-                  className="text-[10px] font-extrabold text-[#2F2FE4] hover:text-[#2020D0] bg-gray-50 border border-gray-200 rounded-lg px-2.5 py-1 shadow-sm transition-all cursor-pointer"
-                >
-                  + Tambah Titik Singgah
-                </button>
-              </div>
-
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
-                {routes.map((route, rIndex) => (
-                  <div key={rIndex} className="flex items-center gap-2">
-                    <span className="text-[9px] font-black text-gray-400 w-16 bg-gray-50 border border-gray-200 rounded px-1.5 py-1.5 text-center select-none uppercase shrink-0">
-                      {rIndex === 0 ? 'Mulai' : rIndex === routes.length - 1 ? 'Tujuan' : `Singgah ${rIndex}`}
-                    </span>
-                    <input
-                      type="text"
-                      placeholder={rIndex === 0 ? 'Lokasi Keberangkatan' : rIndex === routes.length - 1 ? 'Lokasi Akhir / Tujuan' : `Lokasi Singgah`}
-                      value={route}
-                      required
-                      onChange={(e) => {
-                        const updated = [...routes];
-                        updated[rIndex] = e.target.value;
-                        setRoutes(updated);
-                      }}
-                      className="flex-1 px-3 py-1.5 bg-white border border-[#CCCCCC] rounded-lg text-gray-800 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-[#2F2FE4]/10 text-xs font-semibold"
-                    />
-                    {routes.length > 2 && (
-                      <button
-                        type="button"
-                        onClick={() => {
-                          const updated = routes.filter((_, idx) => idx !== rIndex);
-                          setRoutes(updated);
-                        }}
-                        className="p-1.5 bg-red-50 text-[#E3342F] hover:bg-red-100 rounded-lg border border-transparent transition-all shrink-0 cursor-pointer"
-                        title="Hapus Titik Ini"
-                      >
-                        <Trash2 size={14} />
-                      </button>
-                    )}
-                  </div>
-                ))}
-              </div>
-            </div>
-
-            {/* Row 4: Keuangan */}
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div className="flex flex-col space-y-1">
-                <label className="text-[11px] font-bold text-gray-400 uppercase tracking-wider pl-1">
-                  Pendapatan Estimasi (Rp)
-                </label>
-                <div className="relative">
-                  <span className="absolute inset-y-0 left-0 flex items-center pl-4 font-bold text-xs text-gray-400">
-                    Rp
-                  </span>
-                  <input
-                    type="number"
-                    placeholder="Contoh: 4500000"
-                    value={revenue}
-                    onChange={(e) => setRevenue(e.target.value)}
-                    className="w-full pl-10 pr-4 py-2 bg-white border border-[#CCCCCC] rounded-lg text-gray-800 text-xs font-semibold focus:outline-none focus:ring-2 focus:ring-[#2F2FE4]/20"
-                  />
-                </div>
-              </div>
-
-              <div className="flex flex-col space-y-1">
-                <label className="text-[11px] font-bold text-gray-400 uppercase tracking-wider pl-1">
-                  Biaya Operasional (Rp)
-                </label>
-                <div className="relative">
-                  <span className="absolute inset-y-0 left-0 flex items-center pl-4 font-bold text-xs text-gray-400">
-                    Rp
-                  </span>
-                  <input
-                    type="number"
-                    placeholder="Contoh: 1200000"
-                    value={operationalCost}
-                    onChange={(e) => setOperationalCost(e.target.value)}
-                    className="w-full pl-10 pr-4 py-2 bg-white border border-[#CCCCCC] rounded-lg text-gray-800 text-xs font-semibold focus:outline-none focus:ring-2 focus:ring-[#2F2FE4]/20"
-                  />
-                </div>
-              </div>
-            </div>
-
-            {/* Error message */}
-            {errorMsg && (
-              <div className="text-xs font-bold text-red-600 bg-red-50 border border-red-200 rounded-lg p-2.5">
-                {errorMsg}
-              </div>
-            )}
-
-            {/* Submit Button */}
-            <div className="flex justify-end">
-              <button
-                type="submit"
-                disabled={!!driverConflict || !!armadaConflict}
-                className={`px-10 py-2.5 text-white font-bold text-xs rounded-lg transition-all transform active:scale-95 shadow-sm cursor-pointer ${
-                  driverConflict || armadaConflict
-                    ? 'bg-gray-300 cursor-not-allowed text-gray-500'
-                    : 'bg-[#2F2FE4] hover:bg-[#2020D0] hover:scale-[1.01]'
-                }`}
-              >
-                Tambahkan Rute &amp; Jadwal
-              </button>
-            </div>
-          </form>
-        </div>
-
+          <div className="flex justify-end">
+            <button type="submit" className="btn btn-success">
+              <Plus size={18} />
+              <span>Tambah Order</span>
+            </button>
+          </div>
+        </form>
       </div>
 
-      {/* Bottom Layout: Active Orders List — flex-1 fills remaining space */}
-      <div id="order-list-card" className="flex-1 bg-gray-50/30 border border-gray-200 rounded-xl p-5 overflow-y-auto shadow-sm min-h-[200px]">
-        <div className="flex items-center justify-between mb-4 pb-2 border-b border-gray-100">
-          <div>
-            <h4 className="text-xs font-extrabold text-gray-500 uppercase tracking-widest">
-              Daftar Jadwal Perjalanan Terpantau ({activeOrders.length} Trip)
-            </h4>
-            <p className="text-[9px] text-gray-400 font-bold">
-              Daftar trip perjalanan aktif yang sedang berjalan atau dijadwalkan secara sistem.
-            </p>
-          </div>
-        </div>
-
-        <div className="space-y-4">
-          {rowsToRender.map((order, index) => {
-            if (order) {
+      {/* Orders List */}
+      <div className="flex-1 min-h-0 flex flex-col">
+        <h3 className="text-heading mb-4">Order Aktif ({activeOrders.length})</h3>
+        
+        <div className="flex-1 overflow-y-auto space-y-3">
+          {activeOrders.length === 0 ? (
+            <div className="card text-center py-12">
+              <p className="text-body text-gray-400">Belum ada order aktif</p>
+            </div>
+          ) : (
+            activeOrders.map((order) => {
+              const isExpanded = expandedOrderId === order.id;
+              
               return (
                 <motion.div
                   key={order.id}
                   initial={{ opacity: 0, y: 10 }}
                   animate={{ opacity: 1, y: 0 }}
-                  className="bg-white border border-[#E2E8F0] rounded-lg p-4 flex items-center justify-between shadow-sm hover:shadow-md transition-shadow min-h-[76px]"
+                  className="card card-hover"
                 >
-                  <div className="flex-1 flex items-center">
-                    <div className="w-1/2">
-                      <div className="font-bold text-gray-800 text-base">{order.driverName}</div>
-                      <div className="text-sm text-gray-500 font-medium flex items-center gap-2">
-                        <span>{order.plateNumber} — {order.carType}</span>
+                  {/* Main Info - Always Visible */}
+                  <div className="flex items-center justify-between">
+                    <div className="flex-1">
+                      <div className="flex items-center gap-3 mb-2">
+                        <span className="text-subheading">{order.driverName}</span>
+                        <StatusBadge status={order.status} size="sm" />
+                      </div>
+                      <div className="text-caption">
+                        {order.plateNumber} • {order.origin} → {order.destination}
+                      </div>
+                      <div className="text-caption mt-1">
+                        {order.departureDate} - {order.returnDate}
                       </div>
                     </div>
-                    <div className="w-1/2 flex flex-col items-start md:items-center space-y-1.5">
-                      <div className="font-bold text-gray-700 text-xs flex flex-col space-y-1">
-                        <div className="flex items-center gap-1.5">
-                          <span className="text-[9px] bg-emerald-50 text-emerald-700 border border-emerald-200 px-1.5 py-0.5 rounded font-black uppercase tracking-wider">Pergi</span>
-                          <span>{order.departureDate} &bull; {formatTime(order.departureTime) || order.departureTime}</span>
-                        </div>
-                        <div className="flex items-center gap-1.5">
-                          <span className="text-[9px] bg-indigo-50 text-[#2F2FE4] border border-indigo-200 px-1.5 py-0.5 rounded font-black uppercase tracking-wider">Pulang</span>
-                          <span>{order.returnDate} &bull; {formatTime(order.returnTime) || order.returnTime}</span>
-                        </div>
-                      </div>
-                      <div className="text-xs text-gray-500 font-medium flex flex-wrap items-center gap-1 mt-1 justify-start md:justify-center">
-                        <span className="font-bold text-gray-700">{order.origin}</span>
-                        {order.routes && order.routes.length > 2 && order.routes.slice(1, -1).map((stop, sIdx) => (
-                          <React.Fragment key={sIdx}>
-                            <span className="text-gray-300 font-black">&rarr;</span>
-                            <span className="bg-indigo-50 text-indigo-600 px-1.5 py-0.5 rounded text-[10px] font-extrabold">{stop}</span>
-                          </React.Fragment>
-                        ))}
-                        <span className="text-gray-300 font-black">&rarr;</span>
-                        <span className="font-bold text-[#2F2FE4]">{order.destination}</span>
-                      </div>
+
+                    <div className="flex items-center gap-2">
+                      <button
+                        onClick={() => setExpandedOrderId(isExpanded ? null : order.id)}
+                        className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
+                      >
+                        <ChevronDown
+                          size={20}
+                          className={`transition-transform ${isExpanded ? 'rotate-180' : ''}`}
+                        />
+                      </button>
+                      <button onClick={() => onCancelOrder(order.id)} className="btn btn-danger">
+                        <Trash2 size={16} />
+                        <span>Batalkan</span>
+                      </button>
                     </div>
                   </div>
-                  <button
-                    onClick={() => onCancelOrder(order.id)}
-                    className="p-2 text-[#E3342F] hover:bg-red-50 rounded-lg border border-transparent hover:border-[#E3342F]/30 transition-all ml-4 cursor-pointer"
-                    title="Batalkan Perjalanan"
-                  >
-                    <Trash2 size={20} />
-                  </button>
+
+                  {/* Expanded Details */}
+                  <AnimatePresence>
+                    {isExpanded && (
+                      <motion.div
+                        initial={{ height: 0, opacity: 0 }}
+                        animate={{ height: 'auto', opacity: 1 }}
+                        exit={{ height: 0, opacity: 0 }}
+                        className="overflow-hidden"
+                      >
+                        <div className="mt-4 pt-4 border-t border-gray-200 space-y-2">
+                          <div className="grid grid-cols-2 gap-4 text-caption">
+                            <div>
+                              <span className="text-label">Waktu Berangkat:</span>
+                              <p>{order.departureTime || '-'}</p>
+                            </div>
+                            <div>
+                              <span className="text-label">Waktu Kembali:</span>
+                              <p>{order.returnTime || '-'}</p>
+                            </div>
+                            <div>
+                              <span className="text-label">Pendapatan:</span>
+                              <p>Rp {order.revenue?.toLocaleString('id-ID') || 0}</p>
+                            </div>
+                            <div>
+                              <span className="text-label">Biaya Operasional:</span>
+                              <p>Rp {order.operationalCost?.toLocaleString('id-ID') || 0}</p>
+                            </div>
+                          </div>
+                          {order.routes && order.routes.length > 2 && (
+                            <div>
+                              <span className="text-label">Rute:</span>
+                              <p className="text-caption">{order.routes.join(' → ')}</p>
+                            </div>
+                          )}
+                        </div>
+                      </motion.div>
+                    )}
+                  </AnimatePresence>
                 </motion.div>
               );
-            } else {
-              // Placeholder row matching the visual design exactly
-              return (
-                <div
-                  key={`placeholder-${index}`}
-                  className="bg-white/50 border border-dashed border-gray-300 rounded-lg p-4 flex items-center justify-between min-h-[76px]"
-                >
-                  <div className="flex-1 flex items-center">
-                    <div className="w-1/2">
-                      <div className="h-4 w-28 bg-gray-200/60 rounded animate-pulse mb-2"></div>
-                      <div className="h-3 w-40 bg-gray-200/40 rounded animate-pulse"></div>
-                    </div>
-                    <div className="w-1/2 flex flex-col items-start md:items-center">
-                      <div className="h-4 w-16 bg-gray-200/60 rounded animate-pulse mb-2"></div>
-                      <div className="h-3 w-24 bg-gray-200/40 rounded animate-pulse"></div>
-                    </div>
-                  </div>
-                  <button className="p-2 text-gray-300 cursor-not-allowed">
-                    <Trash2 size={20} />
-                  </button>
-                </div>
-              );
-            }
-          })}
+            })
+          )}
         </div>
       </div>
     </div>

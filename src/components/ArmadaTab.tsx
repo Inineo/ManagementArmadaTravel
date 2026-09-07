@@ -30,6 +30,7 @@ import {
   ShieldAlert
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
+import StatusBadge from './StatusBadge';
 
 interface ArmadaTabProps {
   armadaList: Armada[];

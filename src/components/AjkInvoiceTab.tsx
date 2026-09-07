@@ -235,28 +235,112 @@ export default function AjkInvoiceTab({
       alert('Tidak ada data invoice untuk diexport.');
       return;
     }
-    const headers = ['Nomor Invoice', 'Nama Perusahaan Klien', 'Bulan Tagihan', 'Nominal Tagihan (Rp)', 'Tanggal Jatuh Tempo', 'Status Pembayaran', 'Tunggakan (Bulan)', 'Tanggal Pembayaran', 'Catatan'];
-    const csvRows = [
-      headers.join(','),
-      ...filteredInvoices.map(inv => [
-        inv.invoiceNumber,
-        inv.companyName,
-        inv.billingMonth,
-        inv.amount.toString(),
-        inv.dueDate,
-        inv.status,
-        inv.delinquentMonths.toString(),
-        inv.paymentDate || '-',
-        inv.notes || '-'
-      ].map(field => `"${field.replace(/"/g, '""')}"`).join(','))
-    ];
-    
-    const csvContent = '\uFEFF' + csvRows.join('\n');
-    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+
+    const todayStr = new Date().toISOString().split('T')[0];
+    const printDate = new Date().toLocaleDateString('id-ID', {
+      day: 'numeric',
+      month: 'long',
+      year: 'numeric',
+    });
+
+    const totalNominal = filteredInvoices.reduce((sum, inv) => sum + inv.amount, 0);
+    const totalLunas = filteredInvoices.filter((inv) => inv.status === 'Lunas').reduce((sum, inv) => sum + inv.amount, 0);
+    const totalMenunggak = filteredInvoices.filter((inv) => inv.status === 'Menunggak').reduce((sum, inv) => sum + inv.amount, 0);
+
+    const htmlContent = `
+      <html xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:x="urn:schemas-microsoft-com:office:excel" xmlns="http://www.w3.org/TR/REC-html40">
+      <head>
+        <meta charset="utf-8">
+        <!--[if gte mso 9]>
+        <xml>
+         <x:ExcelWorkbook>
+          <x:ExcelWorksheets>
+           <x:ExcelWorksheet>
+            <x:Name>Tagihan AJK</x:Name>
+            <x:WorksheetOptions>
+             <x:DisplayGridlines/>
+            </x:WorksheetOptions>
+           </x:ExcelWorksheet>
+          </x:ExcelWorksheets>
+         </x:ExcelWorkbook>
+        </xml>
+        <![endif]-->
+        <style>
+          body { font-family: Calibri, Arial, sans-serif; font-size: 11pt; }
+          table { border-collapse: collapse; width: 100%; margin-bottom: 20px; }
+          th, td { border: 1px solid #CBD5E1; padding: 8px 12px; text-align: left; vertical-align: middle; }
+          .header-title { background-color: #1E293B; color: #FFFFFF; font-size: 14pt; font-weight: bold; text-align: center; padding: 12px; }
+          .sub-header { background-color: #F8FAFC; color: #475569; font-size: 10pt; font-weight: bold; text-align: center; padding: 6px; }
+          .section-banner { background-color: #2F2FE4; color: #FFFFFF; font-size: 11pt; font-weight: bold; padding: 8px 12px; }
+          .th-bg { background-color: #E2E8F0; color: #0F172A; font-weight: bold; text-align: center; }
+          .text-right { text-align: right; }
+          .text-center { text-align: center; }
+          .text-bold { font-weight: bold; }
+          .total-row { background-color: #F1F5F9; font-weight: bold; border-top: 2px solid #1E293B; border-bottom: 2px solid #1E293B; }
+          .status-lunas { color: #166534; font-weight: bold; }
+          .status-tunggak { color: #991B1B; font-weight: bold; }
+        </style>
+      </head>
+      <body>
+
+        <!-- TITLE BANNER -->
+        <table>
+          <tr>
+            <td colspan="9" class="header-title">DAFTAR INVOICE & TAGIHAN AJK KORPORAT</td>
+          </tr>
+          <tr>
+            <td colspan="9" class="sub-header">Filter Status: ${invoiceStatusFilter} &nbsp;|&nbsp; Tanggal Cetak: ${printDate}</td>
+          </tr>
+        </table>
+
+        <!-- SPACER 1 CELL -->
+        <table><tr><td colspan="9" style="border:none; height: 16px;"></td></tr></table>
+
+        <!-- INVOICE TABLE -->
+        <table>
+          <tr class="th-bg">
+            <td width="5%">No</td>
+            <td width="15%">No. Invoice</td>
+            <td width="20%">Nama Perusahaan Klien</td>
+            <td width="12%">Bulan Tagihan</td>
+            <td width="15%">Nominal Tagihan (Rp)</td>
+            <td width="10%">Jatuh Tempo</td>
+            <td width="10%">Status</td>
+            <td width="8%">Tunggakan</td>
+            <td width="15%">Catatan Penagihan</td>
+          </tr>
+          ${filteredInvoices
+            .map(
+              (inv, idx) => `
+            <tr>
+              <td class="text-center">${idx + 1}</td>
+              <td class="text-bold">${inv.invoiceNumber}</td>
+              <td>${inv.companyName}</td>
+              <td class="text-center">${inv.billingMonth}</td>
+              <td class="text-right text-bold">Rp ${inv.amount.toLocaleString('id-ID')}</td>
+              <td class="text-center">${inv.dueDate}</td>
+              <td class="text-center ${inv.status === 'Lunas' ? 'status-lunas' : 'status-tunggak'}">${inv.status}</td>
+              <td class="text-center">${inv.delinquentMonths > 0 ? `${inv.delinquentMonths} Bln` : '-'}</td>
+              <td>${inv.notes || '-'}</td>
+            </tr>`
+            )
+            .join('')}
+          <tr class="total-row">
+            <td colspan="4" class="text-bold">TOTAL NOMINAL TAGIHAN (${filteredInvoices.length} INVOICE)</td>
+            <td class="text-right text-bold" style="color: #2F2FE4;">Rp ${totalNominal.toLocaleString('id-ID')}</td>
+            <td colspan="4">Lunas: <span class="status-lunas">Rp ${totalLunas.toLocaleString('id-ID')}</span> &nbsp;|&nbsp; Menunggak: <span class="status-tunggak">Rp ${totalMenunggak.toLocaleString('id-ID')}</span></td>
+          </tr>
+        </table>
+
+      </body>
+      </html>
+    `;
+
+    const blob = new Blob([htmlContent], { type: 'application/vnd.ms-excel;charset=utf-8;' });
     const url = URL.createObjectURL(blob);
     const link = document.createElement('a');
     link.setAttribute('href', url);
-    link.setAttribute('download', `Daftar_Tagihan_AJK_${invoiceStatusFilter}_${new Date().toISOString().split('T')[0]}.csv`);
+    link.setAttribute('download', `Daftar_Tagihan_AJK_${invoiceStatusFilter}_${todayStr}.xls`);
     link.style.visibility = 'hidden';
     document.body.appendChild(link);
     link.click();
@@ -322,11 +406,10 @@ export default function AjkInvoiceTab({
         </div>
 
         {/* Critical Overdue Over 3 Months */}
-        <div className={`rounded-2xl p-5 flex flex-col justify-between shadow-sm relative overflow-hidden transition-all duration-300 ${
-          invoiceStats.criticalCount > 0 
-            ? 'bg-red-50 border border-red-200 text-red-900 animate-pulse' 
-            : 'bg-white border border-gray-200'
-        }`}>
+        <div className={`rounded-2xl p-5 flex flex-col justify-between shadow-sm relative overflow-hidden transition-all duration-300 ${invoiceStats.criticalCount > 0
+          ? 'bg-red-50 border border-red-200 text-red-900 animate-pulse'
+          : 'bg-white border border-gray-200'
+          }`}>
           <div className="flex items-center justify-between">
             <span className={`text-xs font-extrabold uppercase tracking-wider ${invoiceStats.criticalCount > 0 ? 'text-red-700' : 'text-gray-400'}`}>
               Tunggakan Kritis &ge;3 Bln
@@ -375,7 +458,7 @@ export default function AjkInvoiceTab({
 
       {/* SEARCH AND ACTION BAR FOR INVOICES */}
       <div className="flex flex-col sm:flex-row items-center justify-between gap-4 bg-white p-4 rounded-2xl border border-gray-200 shadow-sm shrink-0">
-        
+
         {/* Left side: Search & Filter selection */}
         <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2.5 w-full sm:w-auto flex-1">
           {/* Search box */}
@@ -401,11 +484,10 @@ export default function AjkInvoiceTab({
                   key={filter}
                   type="button"
                   onClick={() => setInvoiceStatusFilter(filter)}
-                  className={`px-3 py-1.5 rounded-lg text-[10px] font-black transition-all cursor-pointer ${
-                    isActive 
-                      ? 'bg-white text-[#2F2FE4] shadow-xs border border-gray-150' 
-                      : 'text-gray-500 hover:text-gray-800'
-                  }`}
+                  className={`px-3 py-1.5 rounded-lg text-[10px] font-black transition-all cursor-pointer ${isActive
+                    ? 'bg-white text-[#2F2FE4] shadow-xs border border-gray-150'
+                    : 'text-gray-500 hover:text-gray-800'
+                    }`}
                 >
                   {filter === 'Kritis' ? '⚠️ Kritis (≥3 Bln)' : filter}
                 </button>
@@ -425,7 +507,7 @@ export default function AjkInvoiceTab({
             <FileSpreadsheet size={16} />
             <span>Export Excel (CSV)</span>
           </button>
-          
+
           <button
             type="button"
             onClick={() => setShowAddInvoiceForm(!showAddInvoiceForm)}
@@ -506,7 +588,7 @@ export default function AjkInvoiceTab({
               </div>
 
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 text-xs font-semibold">
-                
+
                 {/* Select Company Client */}
                 <div>
                   <label className="block text-gray-500 uppercase tracking-wide mb-1">
@@ -538,8 +620,8 @@ export default function AjkInvoiceTab({
                   />
 
                   {invCompany && (() => {
-                    const companySchedules = ajkList.filter(s => 
-                      s.status === 'Aktif' && 
+                    const companySchedules = ajkList.filter(s =>
+                      s.status === 'Aktif' &&
                       getCompanyFromRouteName(s.routeName).toLowerCase() === invCompany.toLowerCase()
                     );
                     if (companySchedules.length > 0) {
@@ -733,10 +815,9 @@ export default function AjkInvoiceTab({
               {filteredInvoices.map((inv) => {
                 const isCritical = inv.status === 'Menunggak' && inv.delinquentMonths >= 3;
                 return (
-                  <tr key={inv.id} className={`hover:bg-gray-50/35 transition-colors ${
-                    isCritical ? 'bg-red-50/20 hover:bg-red-50/35' : ''
-                  }`}>
-                    
+                  <tr key={inv.id} className={`hover:bg-gray-50/35 transition-colors ${isCritical ? 'bg-red-50/20 hover:bg-red-50/35' : ''
+                    }`}>
+
                     {/* Company & Invoice number */}
                     <td className="py-3.5 px-4">
                       <div className="font-bold text-gray-800 flex items-center gap-1.5">
@@ -789,11 +870,10 @@ export default function AjkInvoiceTab({
                         </span>
                       ) : (
                         <div className="space-y-1">
-                          <span className={`text-[10px] font-black px-2 py-0.5 rounded-full inline-block ${
-                            inv.delinquentMonths >= 3 
-                              ? 'bg-red-100 text-red-600 border border-red-200' 
-                              : 'bg-amber-50 text-amber-600 border border-amber-200'
-                          }`}>
+                          <span className={`text-[10px] font-black px-2 py-0.5 rounded-full inline-block ${inv.delinquentMonths >= 3
+                            ? 'bg-red-100 text-red-600 border border-red-200'
+                            : 'bg-amber-50 text-amber-600 border border-amber-200'
+                            }`}>
                             {inv.delinquentMonths} Bulan Menunggak
                           </span>
                           {inv.delinquentMonths >= 3 && (
@@ -809,13 +889,12 @@ export default function AjkInvoiceTab({
                     {/* Notes and status badge */}
                     <td className="py-3.5 px-4 max-w-xs">
                       <div className="flex items-center gap-1.5 mb-1">
-                        <span className={`text-[9px] font-extrabold px-2 py-0.5 rounded-full uppercase ${
-                          inv.status === 'Lunas' 
-                            ? 'bg-green-100 text-green-600 border border-green-200' 
-                            : inv.status === 'Menunggak'
-                              ? 'bg-red-50 text-red-600 border border-red-200'
-                              : 'bg-amber-50 text-amber-600 border border-amber-200'
-                        }`}>
+                        <span className={`text-[9px] font-extrabold px-2 py-0.5 rounded-full uppercase ${inv.status === 'Lunas'
+                          ? 'bg-green-100 text-green-600 border border-green-200'
+                          : inv.status === 'Menunggak'
+                            ? 'bg-red-50 text-red-600 border border-red-200'
+                            : 'bg-amber-50 text-amber-600 border border-amber-200'
+                          }`}>
                           {inv.status}
                         </span>
                         {inv.paymentDate && (
@@ -832,7 +911,7 @@ export default function AjkInvoiceTab({
                     {/* Interactive aging and payment actions */}
                     <td className="py-3.5 px-4 text-center">
                       <div className="flex items-center justify-center gap-1.5">
-                        
+
                         {/* MARK AS PAID BUTTON */}
                         {inv.status !== 'Lunas' && (
                           <button
@@ -967,9 +1046,10 @@ export default function AjkInvoiceTab({
 
               {/* Printable Area Card */}
               <div className="p-6 md:p-8 max-h-[70vh] overflow-y-auto" id="printable-invoice-area">
-                
+
                 {/* Print layout styles specifically to isolate printable-invoice-area when window.print() is called */}
-                <style dangerouslySetInnerHTML={{__html: `
+                <style dangerouslySetInnerHTML={{
+                  __html: `
                   @media print {
                     body * {
                       visibility: hidden !important;
@@ -996,7 +1076,7 @@ export default function AjkInvoiceTab({
 
                 {/* Invoice Sheet */}
                 <div className="border border-gray-200 rounded-2xl p-6 md:p-8 bg-white shadow-xs space-y-6">
-                  
+
                   {/* Letterhead */}
                   <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b-2 border-gray-100 pb-5">
                     <div className="space-y-1">
@@ -1082,10 +1162,10 @@ export default function AjkInvoiceTab({
                             <div className="text-[10px] text-gray-500 mt-1 leading-relaxed max-w-md font-medium italic">
                               {selectedInvoice.notes || `Kontrak layanan angkutan harian terjadwal untuk periode ${selectedInvoice.billingMonth}.`}
                             </div>
-                            
+
                             {/* Dynamically display active operational routes of this client in the print sheet */}
                             {(() => {
-                              const relatedRoutes = ajkList.filter(s => 
+                              const relatedRoutes = ajkList.filter(s =>
                                 getCompanyFromRouteName(s.routeName).toLowerCase() === selectedInvoice.companyName.toLowerCase()
                               );
                               if (relatedRoutes.length > 0) {
@@ -1133,9 +1213,9 @@ export default function AjkInvoiceTab({
 
                     <div className="text-center md:text-right flex flex-col justify-between items-center md:items-end h-32">
                       <div className="text-[10px] text-gray-400 font-bold">
-                        Jakarta, {new Date().toLocaleDateString('id-ID', {day: 'numeric', month: 'long', year: 'numeric'})}
+                        Jakarta, {new Date().toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' })}
                       </div>
-                      
+
                       <div className="relative flex flex-col items-center">
                         {/* Stempel / Stamp decoration block */}
                         <div className="absolute -top-6 border-2 border-indigo-500/30 rounded-full px-4 py-1 text-indigo-500/30 font-black text-[9px] uppercase tracking-widest rotate-12 select-none">

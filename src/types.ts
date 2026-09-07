@@ -8,7 +8,7 @@ export interface AjkRouteStop {
   time: string;               // Jam keberangkatan/kedatangan di titik ini (e.g. "06:15")
 }
 
-export type TabType = 'order' | 'ajk' | 'status' | 'armada' | 'driver' | 'perbaikan' | 'laporan';
+export type TabType = 'order' | 'ajk' | 'status' | 'armada' | 'driver' | 'perbaikan' | 'laporan-ajk' | 'laporan-kinerja' | 'laporan-keuangan';
 
 export interface AjkSchedule {
   id: string;

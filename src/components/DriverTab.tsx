@@ -7,6 +7,7 @@ import React, { useState } from 'react';
 import { Driver } from '../types';
 import { Search, Plus, Trash2, Edit3, Check, X } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
+import StatusBadge from './StatusBadge';
 
 interface DriverTabProps {
   driversList: Driver[];
@@ -148,15 +149,7 @@ export default function DriverTab({
                       {driver.phoneNumber}
                     </div>
                     <div className="w-1/3 flex justify-start">
-                      <span
-                        className={`px-6 py-1.5 rounded-full text-xs font-semibold text-white inline-block text-center min-w-[100px] ${
-                          driver.status === 'Ready'
-                            ? 'bg-[#38C172]' // Green
-                            : 'bg-[#3490DC]' // Blue (Dalam Perjalanan)
-                        }`}
-                      >
-                        {driver.status === 'Ready' ? 'Ready' : 'Dalam Perjalanan'}
-                      </span>
+                      <StatusBadge status={driver.status} size="md" />
                     </div>
                   </div>
                 )}
