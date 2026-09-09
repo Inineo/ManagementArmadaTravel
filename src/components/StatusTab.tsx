@@ -59,7 +59,7 @@ export default function StatusTab({
             <SlidersHorizontal size={18} />
             <span>Filter</span>
           </button>
-          
+
           {showFilters && (
             <motion.input
               initial={{ width: 0, opacity: 0 }}
