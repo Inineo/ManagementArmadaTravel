@@ -731,10 +731,13 @@ export default function App() {
             </p>
           </div>
           
-          <div className="flex items-center gap-2 text-xs bg-white py-2 px-4 rounded-full shadow-sm border border-gray-200 text-gray-600 font-semibold">
-            <Info size={14} className="text-[#2F2FE4]" />
-            <span>Mode Demo Aktif (Data Tersimpan di Browser)</span>
-          </div>
+          <a 
+            href="/" 
+            className="flex items-center gap-2 text-xs bg-[#2F2FE4] hover:bg-[#2020D0] py-2 px-5 rounded-full shadow-sm text-white font-semibold transition-all duration-200 hover:shadow-md"
+          >
+            <Info size={14} />
+            <span>Kembali ke Landing Page</span>
+          </a>
         </div>
 
         {/* Tab View Canvas */}
