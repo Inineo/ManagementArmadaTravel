@@ -2,7 +2,7 @@
 
 ## 📋 Project Overview
 
-Management Armada adalah sistem manajemen armada kendaraan berbasis web yang dirancang untuk memudahkan pengelolaan operasional kendaraan, driver, perjalanan, dan pelaporan. Sistem ini mengintegrasikan teknologi AI untuk analisis laporan foto dan menyediakan dashboard komprehensif untuk monitoring real-time.
+Management Armada adalah sistem manajemen armada kendaraan berbasis web yang dirancang untuk memudahkan pengelolaan operasional kendaraan, driver, perjalanan, dan pelaporan. Sistem ini menyediakan dashboard komprehensif untuk monitoring real-time dan pengelolaan dokumentasi perjalanan.
 
 **Tujuan Project:**
 - Menyederhanakan proses manajemen armada kendaraan
@@ -31,8 +31,8 @@ Management Armada hadir untuk mengatasi masalah tersebut dengan menyediakan plat
 - **Trip Tracking** - Detail tracking perjalanan dengan log aktivitas
 
 ### Advanced Features
-- **AI Photo Analysis** - Analisis otomatis foto laporan menggunakan Google Gemini AI
 - **Photo Report System** - Upload dan kompresi foto laporan dengan metadata
+- **Image Compression** - Otomatis resize dan compress foto menggunakan Sharp (300-400KB)
 - **Auto-cleanup System** - Penghapusan otomatis foto expired (14 hari)
 - **Status Badge System** - Visual indicator untuk status perjalanan
 - **Maintenance Tracking** - Jadwal dan riwayat perbaikan kendaraan
@@ -57,7 +57,6 @@ Management Armada hadir untuk mengatasi masalah tersebut dengan menyediakan plat
 ### Backend & API
 - **Next.js API Routes** - Serverless API endpoints
 - **Sharp** 0.35.4 - Image processing dan kompresi
-- **Google Gemini AI** (@google/genai) - AI analysis untuk foto laporan
 
 ### Development Tools
 - **ESLint** - Code linting
@@ -82,11 +81,11 @@ Management Armada hadir untuk mengatasi masalah tersebut dengan menyediakan plat
 └─────────────────────┼───────────┘
                       │
          ┌────────────┼────────────┐
-         ▼            ▼            ▼
-    ┌────────┐  ┌─────────┐  ┌─────────┐
-    │ Sharp  │  │ Gemini  │  │  File   │
-    │ Image  │  │   AI    │  │ Storage │
-    └────────┘  └─────────┘  └─────────┘
+         ▼            ▼            
+    ┌────────┐  ┌─────────┐  
+    │ Sharp  │  │  File   │  
+    │ Image  │  │ Storage │  
+    └────────┘  └─────────┘  
 ```
 
 ### API Endpoints
@@ -126,7 +125,7 @@ Driver Upload Photo → Auto Compress (Sharp)
          ↓
     Save to Storage → Generate Metadata
          ↓
-    AI Analysis (Gemini) → Display Results
+    Display in Gallery → Track Expiration
          ↓
     Auto-delete after 14 days
 ```
@@ -181,10 +180,6 @@ npm start
 Buat file `.env` di root project dengan konfigurasi berikut:
 
 ```env
-# GEMINI_API_KEY: Required for AI photo analysis
-# Dapatkan dari: https://makersuite.google.com/app/apikey
-GEMINI_API_KEY="your_gemini_api_key_here"
-
 # APP_URL: URL aplikasi untuk callbacks dan links
 # Development: http://localhost:3000
 # Production: https://your-domain.com
@@ -254,8 +249,7 @@ ManagementArmada/
 - **Next.js** dipilih untuk kemudahan deployment dan SSR capabilities
 - **TypeScript** untuk type safety dan better developer experience
 - **Tailwind CSS** untuk rapid UI development
-- **Sharp** untuk kompresi gambar yang efisien
-- **Gemini AI** untuk analisis foto laporan yang akurat
+- **Sharp** untuk kompresi gambar yang efisien dan cepat
 
 ### Key Implementation Decisions
 
@@ -281,7 +275,7 @@ ManagementArmada/
 - **Compression**: Auto-resize dan compress menggunakan Sharp
 - **Storage**: File-based dengan metadata terstruktur
 - **Expiration**: Auto-delete setelah 14 hari
-- **AI Analysis**: Gemini AI untuk analisis konten foto
+- **Gallery**: View foto dengan navigation dan metadata
 
 ### Status Tracking
 Status badge dengan color coding:
