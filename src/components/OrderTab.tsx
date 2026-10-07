@@ -100,7 +100,7 @@ export default function OrderTab({
       {/* Form Section */}
       <div className="card">
         <h3 className="text-heading mb-4">Buat Order Baru</h3>
-        
+
         <form onSubmit={handleSubmit} className="space-y-4">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             {/* Driver Selection */}
@@ -214,7 +214,7 @@ export default function OrderTab({
       {/* Orders List */}
       <div className="flex-1 min-h-0 flex flex-col">
         <h3 className="text-heading mb-4">Order Aktif ({activeOrders.length})</h3>
-        
+
         <div className="flex-1 overflow-y-auto space-y-3">
           {activeOrders.length === 0 ? (
             <div className="card text-center py-12">
@@ -223,7 +223,7 @@ export default function OrderTab({
           ) : (
             activeOrders.map((order) => {
               const isExpanded = expandedOrderId === order.id;
-              
+
               return (
                 <motion.div
                   key={order.id}
